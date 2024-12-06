@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Meteorológico</title>
+    <title>El tiempo en Espi</title>
     <link rel="stylesheet" href="sainlogic.css">
+    <link rel="icon" type="image/png" href="favicon2.png">
 </head>
 
 <body>
@@ -16,7 +17,7 @@
             <button class="tablink" onclick="openTab('prevision')">Previsión</button>
         </div>
         <div class="theme-toggle">
-            <button id="darkModeToggle">Claro</button>
+            <button id="darkModeToggle">☀️</button>
         </div>
     </div>
 
@@ -42,14 +43,14 @@
                 <div class="data-icon">🌬️</div>
                 <div class="data-info">
                     <h3>Viento Medio</h3>
-                    <p id="windData">0 m/s</p>
+                    <p id="windData">0 km/h</p>
                 </div>
             </div>
             <div class="data-card">
                 <div class="data-icon">💨</div>
                 <div class="data-info">
                     <h3>Ráfaga</h3>
-                    <p id="gustData">0 m/s</p>
+                    <p id="gustData">0 km/h</p>
                 </div>
             </div>
             <div class="data-card">
@@ -65,6 +66,19 @@
 
     <div id="grafico" class="tabcontent" style="display:none;">
         <h2>Gráfico Histórico</h2>
+        <div id="dateFilter">
+            <form id="dateRangeForm">
+                <label for="startDate">Fecha y hora de inicio:</label>
+                <input type="datetime-local" id="startDate" name="startDate" required>
+                <label for="endDate">Fecha y hora de fin:</label>
+                <input type="datetime-local" id="endDate" name="endDate" required>
+                <button type="submit">Filtrar datos</button>
+            </form>
+        </div>
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
         <div id="chartContainerTemperatura" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerLluvia" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerVientoMedio" class="chart" style="height: 300px; width: 100%;"></div>
@@ -75,9 +89,9 @@
     <div id="prevision" class="tabcontent">
         <h2>Previsión del Tiempo</h2>
         <button id="fetchForecastBtn">Cargar Previsión</button>
-        <div id="loading" style="display: none;">
+        <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
-            <p>Un segundo que cargue ahi to guapo</p>
+            <p>Cargando...</p>
         </div>
 
         <h3>Condiciones Actuales</h3>
@@ -86,7 +100,7 @@
                 <tr>
                     <th>Resumen</th>
                     <th>Temperatura (°C)</th>
-                    <th>Viento (m/s, dirección)</th>
+                    <th>Viento (km/h, dirección)</th>
                     <th>Precipitación (mm)</th>
                     <th>Nubosidad (%)</th>
                 </tr>
@@ -117,7 +131,7 @@
                     <th>Resumen</th>
                     <th>Temp. Mín. (°C)</th>
                     <th>Temp. Máx. (°C)</th>
-                    <th>Viento (m/s, dirección)</th>
+                    <th>Viento (km/h, dirección)</th>
                     <th>Precipitación (mm)</th>
                     <th>Nubosidad (%)</th>
                 </tr>

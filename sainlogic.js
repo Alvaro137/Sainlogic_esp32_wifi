@@ -61,7 +61,7 @@ function createZoomableCharts() {
             zoomEnabled: true,
             title: { text: "Viento Medio" },
             axisX: { title: "Fecha y Hora", valueFormatString: "DD-MM HH:mm" },
-            axisY: { title: "m/s" },
+            axisY: { title: "km/h" },
             data: [{ type: "line", color: "#fcbb08", lineThickness: 3, markerSize: 5, dataPoints: [] }]
         }),
         rafaga: new CanvasJS.Chart("chartContainerRafaga", {
@@ -70,7 +70,7 @@ function createZoomableCharts() {
             zoomEnabled: true,
             title: { text: "Ráfaga" },
             axisX: { title: "Fecha y Hora", valueFormatString: "DD-MM HH:mm" },
-            axisY: { title: "m/s" },
+            axisY: { title: "km/h" },
             data: [{ type: "line", color: "#fcbb08", lineThickness: 3, markerSize: 5, dataPoints: [] }]
         }),
         humedad: new CanvasJS.Chart("chartContainerHumedad", {
@@ -90,18 +90,72 @@ function createZoomableCharts() {
  * @param {Object} charts - Los gráficos por campo.
  */
 function fetchDataAndPlotAll(charts) {
-    const apiUrl = "https://api.thingspeak.com/channels/2770121/feeds.json";
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            const fields = ["lluvia", "temperatura", "vientoMedio", "rafaga", "humedad"];
-            fields.forEach(field => {
-                const fieldData = parseFieldData(data.feeds, field);
-                plotData(charts[field], fieldData);
+    // Agrega el evento al formulario
+    document.getElementById('dateRangeForm').addEventListener('submit', function (e) {
+        e.preventDefault(); // Evita que el formulario recargue la página
+
+        // Muestra el loading
+        const loading = document.getElementById("loading");
+        loading.style.display = "block";
+        console.log("loading...");
+
+        // Obtén los valores de las fechas
+        const startDateInput = document.getElementById('startDate').value;
+        const endDateInput = document.getElementById('endDate').value;
+
+        if (!startDateInput || !endDateInput) {
+            alert("Por favor, selecciona ambas fechas.");
+            loading.style.display = "none"; // Oculta el loading
+            return;
+        }
+
+        if (new Date(startDateInput) > new Date(endDateInput)) {
+            alert("La fecha de inicio debe ser anterior a la fecha de fin.");
+            loading.style.display = "none"; // Oculta el loading
+            return;
+        }
+
+        // Construye las fechas en el formato esperado por la API: YYYY-MM-DDTHH:mm:ss
+        const startDate = new Date(startDateInput).toISOString().slice(0, 19);
+        const endDate = new Date(endDateInput).toISOString().slice(0, 19);
+
+        // Construye la URL con los parámetros de fecha
+        const apiUrl = `https://api.thingspeak.com/channels/2770121/feeds.json?start=${startDate}&end=${endDate}`;
+        console.log(`URL generada: ${apiUrl}`); // Para depuración
+
+        // Realiza la solicitud a la API
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.feeds || data.feeds.length === 0) {
+                    alert("No se encontraron datos en esas fechas. Fehca de inicio mínima: 05/12/2024 a las 23:21:58");
+                    loading.style.display = "none"; // Oculta el loading
+                    return;
+                }
+
+                // Procesa y grafica los datos
+                const fields = ["lluvia", "temperatura", "vientoMedio", "rafaga", "humedad"];
+                fields.forEach(field => {
+                    const fieldData = parseFieldData(data.feeds, field);
+                    plotData(charts[field], fieldData);
+                });
+
+                // Oculta el loading después de procesar los datos
+                loading.style.display = "none";
+            })
+            .catch(error => {
+                console.error('Error al obtener los datos filtrados:', error);
+                alert('No se pudieron obtener los datos para las fechas especificadas.');
+                loading.style.display = "none"; // Oculta el loading en caso de error
             });
-        })
-        .catch(console.error);
+    });
 }
+
 
 /**
  * Obtiene y muestra los últimos datos de todos los campos.
@@ -114,13 +168,12 @@ function fetchLatestData() {
             const latest = data.feeds[data.feeds.length - 1];
             document.getElementById("rainData").textContent = `${latest.field1 || 0} mm`;
             document.getElementById("tempData").textContent = `${latest.field2 || 0} °C`;
-            document.getElementById("windData").textContent = `${latest.field4 || 0} m/s`;
-            document.getElementById("gustData").textContent = `${latest.field5 || 0} m/s`;
+            document.getElementById("windData").textContent = `${latest.field4 || 0} km/h`;
+            document.getElementById("gustData").textContent = `${latest.field5 || 0} km/h`;
             document.getElementById("humidityData").textContent = `${latest.field6 || 0}%`;
         })
         .catch(console.error);
 }
-
 
 /**
  * Extrae datos de un campo específico de la respuesta de la API.
@@ -148,13 +201,11 @@ function plotData(chart, data) {
     chart.render();
 }
 
-
 document.getElementById("darkModeToggle").addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
     const isDarkMode = document.body.classList.contains("dark-mode");
-    document.getElementById("darkModeToggle").textContent = isDarkMode ? "Oscuro" : "Claro";
+    document.getElementById("darkModeToggle").textContent = isDarkMode ? "🌙" : "☀️";
 });
-
 
 // URL de la API
 const url = 'https://www.meteosource.com/api/v1/free/point?lat=41.0620N&lon=6.2853W&sections=all&timezone=auto&language=en&units=metric&key=3anr1qzk4s6wgfv0u6k8gsjawl8ilqhyzeya64fx';  // Sustituye con tu URL real
@@ -169,7 +220,9 @@ async function obtenerDatosPrevision() {
         console.error('Error al obtener los datos de la API:', error);
     }
 }
-// Diccionario para traducir el resumen
+
+
+
 const weatherPhraseTranslations = {
     // Condiciones meteorológicas básicas
     "Fog": "Niebla",
@@ -200,7 +253,7 @@ const weatherPhraseTranslations = {
 
     // Dirección y velocidad del viento
     "Wind from": "Viento del",
-    "m/s": "m/s",
+    "km/h": "km/h",
 
     // Precipitación
     "Rain": "Lluvia",
@@ -216,8 +269,6 @@ const weatherPhraseTranslations = {
     "Rising to": "Subiendo a",
     "°C": "°C"
 };
-
-
 // Función para traducir el resumen
 function translateSummary(summary) {
     let translated = summary;
@@ -279,12 +330,13 @@ function mostrarActual(datos) {
     fila.innerHTML = `
         <td>${translateSummary(datos.summary)}</td>
         <td>${datos.temperature}</td>
-        <td>${datos.wind.speed} m/s, ${datos.wind.dir}</td>
+        <td>${datos.wind.speed} km/h, ${datos.wind.dir}</td>
         <td>${datos.precipitation.total}</td>
         <td>${datos.cloud_cover}</td>
     `;
     tbody.appendChild(fila);
 }
+
 function mostrarHoraria(datos) {
     const tbody = document.getElementById('tablaHoraria').querySelector('tbody');
     tbody.innerHTML = ''; // Limpia el contenido anterior
@@ -295,13 +347,14 @@ function mostrarHoraria(datos) {
             <td>${new Date(hour.date).toLocaleString()}</td>
             <td>${translateSummary(hour.summary)}</td>
             <td>${hour.temperature}</td>
-            <td>${hour.wind.speed} m/s, ${hour.wind.dir}</td>
+            <td>${hour.wind.speed} km/h, ${hour.wind.dir}</td>
             <td>${hour.precipitation.total}</td>
             <td>${hour.cloud_cover.total}</td>
         `;
         tbody.appendChild(fila);
     });
 }
+
 function mostrarDiaria(datos) {
     const tbody = document.getElementById('tablaDiaria').querySelector('tbody');
     tbody.innerHTML = ''; // Limpia el contenido anterior
@@ -313,14 +366,13 @@ function mostrarDiaria(datos) {
             <td>${translateSummary(day.summary)}</td>
             <td>${day.all_day.temperature_min}</td>
             <td>${day.all_day.temperature_max}</td>
-            <td>${day.all_day.wind.speed} m/s, ${day.all_day.wind.dir}</td>
+            <td>${day.all_day.wind.speed} km/h, ${day.all_day.wind.dir}</td>
             <td>${day.all_day.precipitation.total}</td>
             <td>${day.all_day.cloud_cover.total}</td>
         `;
         tbody.appendChild(fila);
     });
 }
-
 
 function mostrarCondiciones(datos) {
     // Puedes acceder a los resúmenes del clima para mostrar un texto como "Nublado" o "Soleado"
@@ -346,9 +398,3 @@ document.getElementById('fetchForecastBtn').addEventListener('click', async () =
     }
     loading.style.display = "none";
 });
-
-
-
-
-
-
