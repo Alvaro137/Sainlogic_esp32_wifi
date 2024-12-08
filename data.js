@@ -58,10 +58,27 @@ function calculateImprovedHeatIndex(temperature, humidity, windSpeed) {
     }
 
     // Si la temperatura no es ni muy caliente ni muy fría, usamos un promedio de ambos índices
-    return (heatIndex + windChill) / 2;
+    return null;
 }
 
 
+/**
+ * Aplica la media móvil a un array de datos.
+ * @param {Array} data - Array de datos a suavizar.
+ * @param {number} period - Número de períodos para la media móvil.
+ * @returns {Array} Array de datos suavizados.
+ */
+function movingAverage(data, numdatos) {
+    const smoothedData = [];
+    const periodo = data.length / numdatos
+    for (let i = 0; i < data.length; i++) {
+        const start = Math.max(i - periodo + 1, 0); // Asegura que no acceda a índices negativos
+        const subset = data.slice(start, i + 1);
+        const average = subset.reduce((sum, point) => sum + point.y, 0) / subset.length;
+        smoothedData.push({ x: data[i].x, y: average });
+    }
+    return smoothedData;
+}
 
 
 
@@ -78,9 +95,18 @@ function fetchLatestData(apiUrl) {
             document.getElementById("windData").textContent = `${parseFloat(latest.field4).toFixed(2) || 0} km/h`;
             document.getElementById("gustData").textContent = `${parseFloat(latest.field5).toFixed(2) || 0} km/h`;
             document.getElementById("humidityData").textContent = `${parseFloat(latest.field6).toFixed(2) || 0}%`;
+
             const temperature = parseFloat(latest.field2);
-            const humidity = parseFloat(latest.field6);
+            const windDirection = parseFloat(latest.field3) + 22.0;
+            if (windDirection >= 360.0) {
+                windDirection = windDirection - 360.0
+            }
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.floor((windDirection) / 45) % 8; // Convertir grados a un índice de los puntos cardinales
+            const windDirectionText = directions[index];
+            document.getElementById("directionData").textContent = `${windDirection.toFixed(2) || 0} ° (${windDirectionText})`;
             const windSpeed = parseFloat(latest.field4);
+            const humidity = parseFloat(latest.field6);
             const improvedHeatIndex = calculateImprovedHeatIndex(temperature, humidity, windSpeed);
             if (improvedHeatIndex !== null) {
                 document.getElementById("heatIndexData").textContent = `${improvedHeatIndex.toFixed(2)} °C`;
@@ -145,11 +171,27 @@ function validateDates(startDate, endDate) {
 }
 
 function processAndPlotData(data, charts, startDateInput, endDateInput) {
-    const fields = ["lluvia", "temperatura", "vientoMedio", "rafaga", "humedad"];
+    const fields = ["lluvia", "temperatura", "vientoMedio", "rafaga", "humedad", "direccionViento"];
+    // Definir el número de períodos para la media móvil (en este caso 10)
+    const movingAveragePeriods = {
+        lluvia: 2000,
+        temperatura: 3000,
+        vientoMedio: 300,
+        rafaga: 300,
+        humedad: 500,
+        direccionViento: 300
+    };
+
     fields.forEach(field => {
-        const fieldData = parseFieldData(data.feeds, field);
+        let fieldData = parseFieldData(data.feeds, field);
+
+        // Aplicar la media móvil con el período correspondiente para cada campo
+        const movingAveragePeriod = movingAveragePeriods[field];
+        fieldData = movingAverage(fieldData, movingAveragePeriod);
+
         plotData(charts[field], fieldData);
     });
+
     const totalRain = calculateTotalRain(data.feeds, startDateInput, endDateInput);
     document.getElementById("totalRainData").textContent = `${totalRain.toFixed(2)} mm`;
 }
@@ -158,13 +200,14 @@ function parseFieldData(feeds, fieldName) {
     const fieldMap = {
         lluvia: "field1",
         temperatura: "field2",
+        direccionViento: "field3",
         vientoMedio: "field4",
         rafaga: "field5",
-        humedad: "field6"
+        humedad: "field6",
     };
     const field = fieldMap[fieldName];
     return feeds.map(feed => ({
         x: new Date(feed.created_at),
-        y: parseFloat(feed[field])
+        y: fieldName === 'direccionViento' ? (parseFloat(feed[field]) || 0) : parseFloat(feed[field])
     }));
 }

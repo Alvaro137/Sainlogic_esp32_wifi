@@ -8,7 +8,8 @@ function createZoomableCharts() {
         lluvia: createChart("chartContainerLluvia", "Lluvia", "mm", "#2196f3"),
         vientoMedio: createChart("chartContainerVientoMedio", "Viento Medio", "km/h", "#fcbb08"),
         rafaga: createChart("chartContainerRafaga", "Ráfaga", "km/h", "#fcbb08"),
-        humedad: createChart("chartContainerHumedad", "Humedad", "%", "#2196f3")
+        humedad: createChart("chartContainerHumedad", "Humedad", "%", "#2196f3"),
+        direccionViento: createChart("chartContainerDireccionViento", "Dirección del Viento", "°", "#4CAF50")
     };
 }
 

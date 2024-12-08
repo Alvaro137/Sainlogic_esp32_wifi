@@ -308,6 +308,10 @@ a {
     #dateFilter button[type="submit"] {
         font-size: 14px;
     }
+    .rain-data-container {
+        width: 90%;
+
+    }
 }
 
 .chart-container {
@@ -544,6 +548,11 @@ table tbody tr:hover {
         /* Reduce el tamaño del texto */
         padding: 4px 6px;
         /* Reduce el espaciado */
+    }
+
+    .rain-data-container {
+        width: 100%;
+
     }
 
 }
