@@ -23,7 +23,6 @@
 
 
     <div id="actual" class="tabcontent">
-        <h2>Datos Actuales</h2>
         <div class="current-data-container">
             <div class="data-card">
                 <div class="data-icon">🌧️</div>
@@ -40,6 +39,20 @@
                 </div>
             </div>
             <div class="data-card">
+                <div class="data-icon">🔥</div>
+                <div class="data-info">
+                    <h3>Sensación Térmica</h3>
+                    <p id="heatIndexData">No disponible</p>
+                </div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">💧</div>
+                <div class="data-info">
+                    <h3>Humedad</h3>
+                    <p id="humidityData">0%</p>
+                </div>
+            </div>
+            <div class="data-card">
                 <div class="data-icon">🌬️</div>
                 <div class="data-info">
                     <h3>Viento Medio</h3>
@@ -53,19 +66,12 @@
                     <p id="gustData">0 km/h</p>
                 </div>
             </div>
-            <div class="data-card">
-                <div class="data-icon">💧</div>
-                <div class="data-info">
-                    <h3>Humedad</h3>
-                    <p id="humidityData">0%</p>
-                </div>
-            </div>
+
         </div>
     </div>
 
 
     <div id="grafico" class="tabcontent" style="display:none;">
-        <h2>Gráfico Histórico</h2>
         <div id="dateFilter">
             <form id="dateRangeForm">
                 <label for="startDate">Fecha y hora de inicio:</label>
@@ -76,18 +82,27 @@
             </form>
         </div>
         <div id="loading" class="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Cargando...</p>
+            <div class="spinner-modern"></div>
+            <p class="loading-text">Cargando...</p>
+        </div>
+        <div class="raintotalcontainer">
+            <div id="rainDataContainer" class="rain-data-container">
+                <div class="rain-data-icon">🌧️</div>
+                <div class="rain-data-info">
+                    <h3>Lluvia Acumulada</h3>
+                    <p id="totalRainData">Selecciona las fechas</p>
+                </div>
+            </div>
         </div>
         <div id="chartContainerTemperatura" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerLluvia" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerVientoMedio" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerRafaga" class="chart" style="height: 300px; width: 100%;"></div>
         <div id="chartContainerHumedad" class="chart" style="height: 300px; width: 100%;"></div>
+        <div id="chartContainerSemanal" class="chart" style="height: 300px; width: 100%;"></div>
     </div>
 
     <div id="prevision" class="tabcontent">
-        <h2>Previsión del Tiempo</h2>
         <button id="fetchForecastBtn">Cargar Previsión</button>
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
@@ -143,7 +158,11 @@
 
 
     <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
-    <script src="sainlogic.js"></script>
+    <script src="tabs.js"></script>
+    <script src="charts.js"></script>
+    <script src="data.js"></script>
+    <script src="theme.js"></script>
+    <script type="module" src="./main.js"></script>
 </body>
 
 </html>

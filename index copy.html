@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico Semanal de Temperaturas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Temperaturas Semanales</h1>
+    <canvas id="weeklyTempChart" width="800" height="400"></canvas>
+
+    <script>
+        // URL de tu API
+        const API_URL = "https://api.thingspeak.com/channels/2770121/feeds.json?results=1000000"; // Reemplaza con la URL real
+
+        // Función para obtener datos de la API
+        async function fetchData() {
+            console.log("Fetching data from API...");
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            console.log("Data fetched:", data);
+            return data;
+        }
+
+        // Función para procesar y organizar las temperaturas por día
+        function processWeeklyTemperatures(feeds) {
+            console.log("Processing temperatures...");
+            const dailyTemps = Array(7).fill(null).map(() => []); // Array para 7 días de la semana
+            console.log("Inicializamos dailyTemps:", dailyTemps);
+
+            feeds.forEach(feed => {
+                const date = new Date(feed.created_at);
+                const dayIndex = (new Date().getDay() - date.getDay() + 7) % 7; // Índice del día relativo a hoy
+                console.log(`Procesando feed: ${feed.created_at}, índice día: ${dayIndex}`);
+
+                if (dayIndex < 7) { // Solo procesamos los últimos 7 días
+                    const temp = parseFloat(feed.field2); // Extraemos la temperatura
+                    if (!isNaN(temp)) {
+                        dailyTemps[dayIndex].push({ time: date.toLocaleTimeString(), temp });
+                    }
+                }
+            });
+
+            console.log("dailyTemps después del procesamiento:", dailyTemps);
+            return dailyTemps.reverse(); // Revertimos para que el día más antiguo sea el primero
+        }
+
+        // Función para renderizar el gráfico
+        async function renderChart() {
+            try {
+                const apiData = await fetchData();
+                const feeds = apiData.feeds;
+                console.log("Feeds recibidos:", feeds);
+
+                // Procesar datos para los últimos 7 días
+                const weeklyTemps = processWeeklyTemperatures(feeds);
+                console.log("Datos procesados para los últimos 7 días:", weeklyTemps);
+
+                // Generar datasets para Chart.js
+                const datasets = weeklyTemps.map((temps, index) => {
+                    if (temps.length === 0) {
+                        console.log(`No hay datos para el día ${7 - index}, se omite.`);
+                        return null;
+                    }
+
+                    console.log(`Generando dataset para el día ${7 - index}:`, temps);
+                    return {
+                        label: `Día ${7 - index}`, // Etiqueta para cada día
+                        data: temps.map(entry => entry.temp), // Temperaturas del día
+                        borderColor: `hsl(${(index * 50) % 360}, 70%, 50%)`, // Colores distintos para cada día
+                        backgroundColor: `hsl(${(index * 50) % 360}, 70%, 30%)`,
+                        borderWidth: 2,
+                        tension: 0.4, // Línea suavizada
+                    };
+                }).filter(Boolean); // Elimina datasets nulos (días sin datos)
+
+                console.log("Datasets generados:", datasets);
+
+                // Generar etiquetas
+                const maxLabels = Math.max(...weeklyTemps.map(day => day.length));
+                const labels = maxLabels > 0
+                    ? weeklyTemps.find(day => day.length === maxLabels).map(entry => entry.time)
+                    : [];
+                console.log("Etiquetas generadas para el eje X:", labels);
+
+                // Configurar el gráfico
+                const ctx = document.getElementById('weeklyTempChart').getContext('2d');
+                console.log("Creando gráfico con los datos proporcionados...");
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white' // Etiquetas en blanco
+                                }
+                            },
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: 'white' // Eje X en blanco
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: 'white' // Eje Y en blanco
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log("Gráfico creado exitosamente.");
+            } catch (error) {
+                console.error("Error al renderizar el gráfico:", error);
+            }
+        }
+
+        // Renderizar el gráfico al cargar la página
+        renderChart();
+    </script>
+</body>
+
+</html>
