@@ -37,28 +37,10 @@ function calculateTotalRain(feeds, startDate, endDate, minRain = 0.3) {
 */
 function calculateImprovedHeatIndex(temperature, humidity, windSpeed) {
     if (isNaN(temperature) || isNaN(humidity) || isNaN(windSpeed)) return null;
-
-    // Calcula el Heat Index (sensación térmica por calor) utilizando la fórmula estándar
-    const heatIndex = -8.78469475556 + 1.61139411 * temperature + 2.33854883889 * humidity
-        - 0.14611605 * temperature * humidity - 0.012308094 * Math.pow(temperature, 2)
-        - 0.016424827777 * Math.pow(humidity, 2) + 0.002211732 * Math.pow(temperature, 2) * humidity
-        + 0.00072546 * temperature * Math.pow(humidity, 2) - 0.000003582 * Math.pow(temperature, 2) * Math.pow(humidity, 2);
-
-    // Si la temperatura es mayor a 27.8°C, la humedad afecta significativamente la sensación térmica
-    if (temperature > 27.8) {
-        return heatIndex;  // Cuando la temperatura es suficientemente alta, se usa el Heat Index
-    }
-
     // Calcula el Wind Chill (sensación térmica por frío debido al viento)
     const windChill = 13.12 + 0.6215 * temperature - 11.37 * Math.pow(windSpeed, 0.16) + 0.3965 * temperature * Math.pow(windSpeed, 0.16);
 
-    // Si hace frío y el viento es fuerte, usamos el Wind Chill
-    if (temperature < 10) {
-        return windChill;
-    }
-
-    // Si la temperatura no es ni muy caliente ni muy fría, usamos un promedio de ambos índices
-    return null;
+    return windChill;
 }
 
 
@@ -179,7 +161,7 @@ function processAndPlotData(data, charts, startDateInput, endDateInput) {
         vientoMedio: 300,
         rafaga: 300,
         humedad: 500,
-        direccionViento: 300
+        direccionViento: 80
     };
 
     fields.forEach(field => {
@@ -194,6 +176,22 @@ function processAndPlotData(data, charts, startDateInput, endDateInput) {
 
     const totalRain = calculateTotalRain(data.feeds, startDateInput, endDateInput);
     document.getElementById("totalRainData").textContent = `${totalRain.toFixed(2)} mm`;
+}
+
+
+function PlotTempSemanal(data) {
+    const fields = ["temperatura"];
+    // Definir el número de períodos para la media móvil (en este caso 10)
+    const movingAveragePeriods = 1000;
+
+    fields.forEach(field => {
+        let fieldData = parseFieldData(data.feeds, field);
+
+        // Aplicar la media móvil con el período correspondiente para cada campo
+        const movingAveragePeriod = movingAveragePeriods[field];
+        fieldData = movingAverage(fieldData, movingAveragePeriod);
+        plotSemanal(fieldData);
+    });
 }
 
 function parseFieldData(feeds, fieldName) {

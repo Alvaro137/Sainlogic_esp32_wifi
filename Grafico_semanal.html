@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico Semanal de Temperaturas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Temperaturas Semanales</h1>
+    <canvas id="weeklyTempChart" width="800" height="400"></canvas>
+
+    <script>
+        const API_URL = "https://api.thingspeak.com/channels/2770121/feeds.json?results=1000000";
+
+        function parseFieldData(feeds, fieldName) {
+            const fieldMap = {
+                lluvia: "field1",
+                temperatura: "field2",
+                direccionViento: "field3",
+                vientoMedio: "field4",
+                rafaga: "field5",
+                humedad: "field6",
+            };
+            const field = fieldMap[fieldName];
+            return feeds.map(feed => ({
+                x: new Date(feed.created_at),
+                y: parseFloat(feed[field]) || null
+            })).filter(point => point.y !== null);
+        }
+
+        function movingAverage(data, numdatos) {
+            const smoothedData = [];
+            const periodo = Math.floor(data.length / numdatos);
+            for (let i = 0; i < data.length; i++) {
+                const start = Math.max(i - periodo + 1, 0);
+                const subset = data.slice(start, i + 1);
+                const average = subset.reduce((sum, point) => sum + point.y, 0) / subset.length;
+                smoothedData.push({ x: data[i].x, y: average });
+            }
+            return smoothedData;
+        }
+
+        function divideDataByDays(data) {
+            const days = Array(7).fill(null).map(() => []);
+            const now = new Date();
+
+            data.forEach(point => {
+                const dayIndex = (now.getDay() - point.x.getDay() + 7) % 7;
+                if (dayIndex < 7) {
+                    days[dayIndex].push(point);
+                }
+            });
+
+            return days.reverse();
+        }
+
+        async function renderChart() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                const feeds = data.feeds;
+
+                const fieldName = "temperatura";
+                let fieldData = parseFieldData(feeds, fieldName);
+
+                const numPuntosDeseados = 1000;
+                fieldData = movingAverage(fieldData, numPuntosDeseados);
+
+                const weeklyData = divideDataByDays(fieldData);
+
+                const datasets = weeklyData.map((dayData, index) => {
+                    if (dayData.length === 0) return null;
+
+                    const dayLabel = new Date(dayData[0].x).toLocaleDateString("es-ES", {
+                        weekday: "long"
+                    });
+
+                    return {
+                        label: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
+                        data: dayData.map(point => ({
+                            x: point.x.getHours() * 60 + point.x.getMinutes(), // Minutos del día
+                            y: point.y
+                        })),
+                        borderColor: `hsl(${index * 50}, 70%, 50%)`,
+                        backgroundColor: `hsl(${index * 50}, 70%, 30%)`,
+                        borderWidth: 2,
+                        tension: 0.4
+                    };
+                }).filter(Boolean);
+
+                const ctx = document.getElementById('weeklyTempChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({ length: 1440 }, (_, i) => {
+                            const hours = Math.floor(i / 60).toString().padStart(2, '0');
+                            const minutes = (i % 60).toString().padStart(2, '0');
+                            return `${hours}:${minutes}`;
+                        }), // 00:00 a 23:59
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear', // Escala lineal
+                                title: {
+                                    display: true,
+                                    text: 'Hora del día',
+                                    color: 'white'
+                                },
+                                ticks: {
+                                    color: 'white',
+                                    callback: (value) => {
+                                        const hours = Math.floor(value / 60).toString().padStart(2, '0');
+                                        const minutes = (value % 60).toString().padStart(2, '0');
+                                        return `${hours}:${minutes}`;
+                                    }
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Temperatura (°C)',
+                                    color: 'white'
+                                },
+                                ticks: {
+                                    color: 'white'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error al procesar o renderizar el gráfico:", error);
+            }
+        }
+
+        renderChart();
+    </script>
+</body>
+
+</html>
