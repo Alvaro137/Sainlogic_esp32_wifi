@@ -84,7 +84,7 @@
                 const fieldName = "temperatura";
                 let fieldData = parseFieldData(feeds, fieldName);
 
-                const numPuntosDeseados = 1000;
+                const numPuntosDeseados = 300;
                 fieldData = movingAverage(fieldData, numPuntosDeseados);
 
                 const weeklyData = divideDataByDays(fieldData);

@@ -63,8 +63,40 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-a {
+
+
+/* Estilo general para el enlace */
+.Grafico-semanal-link {
+    display: inline-block !important;
+    font-size: 18px;
+    /* Tamaño de la fuente */
+    font-weight: bold;
+    /* Negrita */
+    color: var(--secondary-color);
+    /* Color azul */
     text-decoration: none;
+    /* Elimina el subrayado por defecto */
+    padding: 10px 20px;
+    /* Relleno alrededor del texto */
+    border-radius: 5px;
+    /* Bordes redondeados */
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Transición suave para el fondo y color */
+}
+
+/* Estilo cuando el enlace está en hover */
+.Grafico-semanal-link:hover {
+    background-color: var(--tab-color);
+    cursor: pointer;
+    /* Cursor en forma de mano */
+}
+
+/* Estilo cuando el enlace está en foco (para accesibilidad) */
+.Grafico-semanal-link:focus {
+    outline: 2px solid var(--secondary-color);
+    /* Resalta el enlace con un borde azul */
+    outline-offset: 2px;
+    /* Ajusta la distancia del borde */
 }
 
 /* Pestañas */
@@ -247,13 +279,13 @@ a {
 
 /* Inputs de fecha y hora */
 #dateFilter input[type="datetime-local"] {
-    width: 100%;
+    width: 95%;
     padding: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     border: 1px solid var(--tab-color);
     border-radius: 4px;
     font-size: 14px;
-    background-color: var(--background-color);
+    background-color: var(--tab-color);
     color: var(--text-color);
 }
 
