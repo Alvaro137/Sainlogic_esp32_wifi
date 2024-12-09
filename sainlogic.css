@@ -161,6 +161,31 @@ a {
 
 }
 
+
+#disclaimer {
+    margin-top: 20px;
+    text-align: center;
+    background-color: var(--background-color);
+    border: 1px solid var(--secondary-color);
+    color: var(--text-color);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#disclaimer img {
+    width: 300px;
+    height: 500px;
+    margin-bottom: 10px;
+}
+
+.show-disclaimer {
+    display: block;
+}
+
+.hidden {
+    display: none;
+}
+
 /* Tarjetas de datos */
 .data-card {
     background-color: var(--chart-background);
@@ -308,6 +333,7 @@ a {
     #dateFilter button[type="submit"] {
         font-size: 14px;
     }
+
     .rain-data-container {
         width: 90%;
 

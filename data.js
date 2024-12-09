@@ -63,7 +63,13 @@ function movingAverage(data, numdatos) {
 }
 
 
-
+// Función para verificar si el tiempo ha excedido tmax minutos
+function hasTimeExceeded(lastDate, tmax) {
+    const currentTime = new Date();
+    const lastTime = new Date(lastDate);
+    const timeDifference = (currentTime - lastTime) / 60000; // Diferencia en minutos
+    return timeDifference > tmax;
+}
 /**
  * Obtiene y muestra los últimos datos de todos los campos.
  */
@@ -94,6 +100,14 @@ function fetchLatestData(apiUrl) {
                 document.getElementById("heatIndexData").textContent = `${improvedHeatIndex.toFixed(2)} °C`;
             } else {
                 document.getElementById("heatIndexData").textContent = "No disponible";
+            }
+            // Verificar si han pasado más de tmax minutos desde el último dato
+            if (hasTimeExceeded(latest.created_at, 10)) {
+                document.getElementById('disclaimer')?.classList.remove('hidden');
+                document.getElementById('disclaimer')?.classList.add('show-disclaimer');
+            } else {
+                document.getElementById('disclaimer')?.classList.remove('show-disclaimer');
+                document.getElementById('disclaimer')?.classList.add('hidden');
             }
         })
         .catch(console.error);
