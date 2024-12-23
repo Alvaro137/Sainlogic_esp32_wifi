@@ -32,19 +32,6 @@ function calculateTotalRain(feeds, startDate, endDate, minRain = 0.3) {
 
 
 /**
- * Calcula la sensación térmica simplificada (índice de calor y Wind Chill)
- * Temperatura en °C, Humedad en % y Viento en km/h
-*/
-function calculateImprovedHeatIndex(temperature, humidity, windSpeed) {
-    if (isNaN(temperature) || isNaN(humidity) || isNaN(windSpeed)) return null;
-    // Calcula el Wind Chill (sensación térmica por frío debido al viento)
-    const windChill = 13.12 + 0.6215 * temperature - 11.37 * Math.pow(windSpeed, 0.16) + 0.3965 * temperature * Math.pow(windSpeed, 0.16);
-
-    return windChill;
-}
-
-
-/**
  * Aplica la media móvil a un array de datos.
  * @param {Array} data - Array de datos a suavizar.
  * @param {number} period - Número de períodos para la media móvil.
@@ -68,7 +55,19 @@ function hasTimeExceeded(lastDate, tmax) {
     const currentTime = new Date();
     const lastTime = new Date(lastDate);
     const timeDifference = (currentTime - lastTime) / 60000; // Diferencia en minutos
-    return timeDifference > tmax;
+
+    const disclaimerElement = document.getElementById('disclaimer');
+    if (timeDifference > tmax) {
+        disclaimerElement.classList.remove('hidden');
+        disclaimerElement.classList.add('show-disclaimer');
+        disclaimerElement.innerHTML = `<p>No se han detectado cambios en los datos durante los últimos ${Math.floor(timeDifference)} minutos. Hay 2 posibles soluciones:</p>` +
+            `<p>1) Presiona el botón "EN":</p>` +
+            `<img src="EN.jpg" alt="Advertencia" />` +
+            `<p>2) Conéctate al wifi ESP32_AP (contraseña: 12345678), y luego presiona configure wifi (TP_Link_AP_7C1E, contraseña: 35019503)</p>`;
+    } else {
+        disclaimerElement.classList.remove('show-disclaimer');
+        disclaimerElement.classList.add('hidden');
+    }
 }
 /**
  * Obtiene y muestra los últimos datos de todos los campos.
@@ -95,30 +94,23 @@ function fetchLatestData(apiUrl) {
             document.getElementById("directionData").textContent = `${windDirection.toFixed(2) || 0} ° (${windDirectionText})`;
             const windSpeed = parseFloat(latest.field4);
             const humidity = parseFloat(latest.field6);
-            const improvedHeatIndex = calculateImprovedHeatIndex(temperature, humidity, windSpeed);
-            if (improvedHeatIndex !== null) {
-                document.getElementById("heatIndexData").textContent = `${improvedHeatIndex.toFixed(2)} °C`;
-            } else {
-                document.getElementById("heatIndexData").textContent = "No disponible";
-            }
+
             // Verificar si han pasado más de tmax minutos desde el último dato
-            if (hasTimeExceeded(latest.created_at, 10)) {
-                document.getElementById('disclaimer')?.classList.remove('hidden');
-                document.getElementById('disclaimer')?.classList.add('show-disclaimer');
-            } else {
-                document.getElementById('disclaimer')?.classList.remove('show-disclaimer');
-                document.getElementById('disclaimer')?.classList.add('hidden');
-            }
+            hasTimeExceeded(latest.created_at, 10);
         })
         .catch(console.error);
 }
 
-
+function updateProgressBar(percentage) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    progressBar.style.width = `${percentage}%`;
+    progressText.textContent = `Cargando: ${percentage.toFixed(0)}%`;
+}
 /**
  * Realiza una solicitud para obtener datos históricos y graficarlos.
  */
 function fetchDataAndPlotAll(apiUrl, charts) {
-    // Agrega el evento al formulario
     document.getElementById('dateRangeForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -127,31 +119,65 @@ function fetchDataAndPlotAll(apiUrl, charts) {
 
         if (!validateDates(startDateInput, endDateInput)) return;
 
-        const loading = document.getElementById("loading");
-        loading.style.display = "block";
+        const loading = document.getElementById("loadingProgress");
+        loading.style.display = "flex";
 
-        const startDate = new Date(startDateInput).toISOString().slice(0, 19);
-        const endDate = new Date(endDateInput).toISOString().slice(0, 19);
+        let currentStartDate = new Date(startDateInput);
+        const finalEndDate = new Date(endDateInput);
+        const currentDate = new Date();
+        const earliestDate = new Date("2024-11-30T11:17:40Z");
+        const allData = [];
+        let completedRequests = 0;
 
-        const apiUrlWithParams = `${apiUrl}?start=${startDate}&end=${endDate}`;
+        if (currentStartDate < earliestDate) {
+            currentStartDate = earliestDate;
+        }
 
-        fetch(apiUrlWithParams)
-            .then(response => {
-                if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
-                return response.json();
-            })
-            .then(data => {
-                processAndPlotData(data, charts, startDateInput, endDateInput);
+        const totalRequests = Math.ceil((finalEndDate - currentStartDate) / (2 * 24 * 60 * 60 * 1000)); // Número total de bloques
+
+        async function fetchAllChunks() {
+            try {
+                while (currentStartDate <= finalEndDate && currentStartDate <= currentDate) {
+                    const nextStartDate = new Date(currentStartDate);
+                    nextStartDate.setDate(nextStartDate.getDate() + 2);
+
+                    const currentEndDate = nextStartDate > finalEndDate ? finalEndDate : nextStartDate;
+
+                    const apiUrlWithParams = `${apiUrl}?start=${currentStartDate.toISOString().slice(0, 19)}&end=${currentEndDate.toISOString().slice(0, 19)}`;
+                    const response = await fetch(apiUrlWithParams);
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    if (data.feeds && data.feeds.length > 0) {
+                        allData.push(...data.feeds);
+                        const lastEntryDate = new Date(data.feeds[data.feeds.length - 1].created_at);
+                        currentStartDate = new Date(lastEntryDate);
+                        currentStartDate.setSeconds(currentStartDate.getSeconds() + 1);
+                    } else {
+                        currentStartDate = currentEndDate;
+                    }
+
+                    completedRequests++;
+                    const progress = (completedRequests / totalRequests) * 100;
+                    updateProgressBar(progress);
+                }
+
+                processAndPlotData({ feeds: allData }, charts, startDateInput, endDateInput);
                 loading.style.display = "none";
-            })
-            .catch(error => {
+
+            } catch (error) {
                 console.error('Error:', error);
                 loading.style.display = "none";
-            });
+            }
+        }
 
-
+        fetchAllChunks();
     });
 }
+
+
 
 function validateDates(startDate, endDate) {
     if (!startDate || !endDate) {

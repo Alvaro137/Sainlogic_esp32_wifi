@@ -62,25 +62,18 @@
     </div>
 
     <script>
+        // API URL para obtener solo los datos de temperatura (field2)
+        const API_URL = "https://api.thingspeak.com/channels/2770121/fields/2.json";
 
-        const API_URL = "https://api.thingspeak.com/channels/2770121/feeds.json?results=1000000";
-
-        function parseFieldData(feeds, fieldName) {
-            const fieldMap = {
-                lluvia: "field1",
-                temperatura: "field2",
-                direccionViento: "field3",
-                vientoMedio: "field4",
-                rafaga: "field5",
-                humedad: "field6",
-            };
-            const field = fieldMap[fieldName];
+        // Función para procesar los datos obtenidos
+        function parseFieldData(feeds) {
             return feeds.map(feed => ({
                 x: new Date(feed.created_at),
-                y: parseFloat(feed[field]) || null
+                y: parseFloat(feed.field2) || null
             })).filter(point => point.y !== null);
         }
 
+        // Función para aplicar una media móvil
         function movingAverage(data, numdatos) {
             const smoothedData = [];
             const periodo = Math.floor(data.length / numdatos);
@@ -93,6 +86,7 @@
             return smoothedData;
         }
 
+        // Función para dividir los datos por días
         function divideDataByDays(data) {
             const days = Array(7).fill(null).map(() => []);
             const now = new Date();
@@ -107,37 +101,80 @@
             return days.reverse();
         }
 
+        // Función para obtener los datos de un rango de fechas
+        async function fetchDailyData(startDate, endDate) {
+            const apiUrl = `${API_URL}?start=${startDate.toISOString().slice(0, 19).replace("T", " ")}&end=${endDate.toISOString().slice(0, 19).replace("T", " ")}&results=8000`;
+            console.log("URL de la API (fetchDailyData):", apiUrl); // Log de la URL de la API
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                console.log("Datos obtenidos de la API:", data); // Log de los datos obtenidos de la API
+                return data.feeds || [];
+            } catch (error) {
+                console.error("Error al obtener los datos de la API:", error);
+                return [];
+            }
+        }
+
+        // Función para obtener los datos de los últimos 7 días
+        async function fetchLastSevenDaysData() {
+            let allFeeds = [];
+            let currentDate = new Date();
+
+            // Realiza 7 fetches para los últimos 7 días
+            for (let i = 0; i < 7; i++) {
+                const endDate = new Date(currentDate); // Final del día actual
+                const startDate = new Date(currentDate);
+                startDate.setDate(currentDate.getDate() - 1); // Inicio del día anterior
+
+                // Obtener datos para el día actual
+                const dailyData = await fetchDailyData(startDate, endDate);
+                allFeeds = allFeeds.concat(dailyData);
+
+                // Restar un día para el siguiente fetch
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+
+            console.log("Todos los datos obtenidos para los últimos 7 días:", allFeeds); // Log de todos los datos obtenidos
+            return allFeeds;
+        }
+
+        // Función para renderizar el gráfico
         async function renderChart() {
             try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                const feeds = data.feeds;
+                // Obtener los datos de los últimos 7 días
+                const feeds = await fetchLastSevenDaysData();
 
-                const fieldName = "temperatura";
-                let fieldData = parseFieldData(feeds, fieldName);
+                // Procesar los datos para obtener solo la temperatura (field2)
+                let fieldData = parseFieldData(feeds);
 
+                // Suavizar los datos con una media móvil
                 const numPuntosDeseados = 300;
                 fieldData = movingAverage(fieldData, numPuntosDeseados);
 
+                // Dividir los datos por días
                 const weeklyData = divideDataByDays(fieldData);
 
+                // Eliminar el primer y último punto de cada día para evitar líneas extrañas
                 const datasets = weeklyData.map((dayData, index) => {
                     if (dayData.length === 0) return null;
+
+                    console.log(`Datos del día ${index + 1} antes de eliminar el primer y último punto:`, dayData); // Log antes de eliminar el primer y último punto
+
+                    // Eliminar el primer y último punto
+                    dayData = dayData.slice(1, dayData.length - 1);
+
+                    console.log(`Datos del día ${index + 1} después de eliminar el primer y último punto:`, dayData); // Log después de eliminar el primer y último punto
 
                     const dayLabel = new Date(dayData[0].x).toLocaleDateString("es-ES", {
                         weekday: "long"
                     });
 
                     const colors = [
-                        '#005f73', // Azul profundo
-                        '#0a9396', // Verde azulado
-                        '#94d2bd', // Verde menta suave
-                        '#e9d8a6', // Amarillo pastel
-                        '#ee9b00', // Naranja cálido
-                        '#ca6702', // Rojo quemado
-                        '#bb3e03'  // Rojo terracota oscuro
+                        '#005f73', '#0a9396', '#94d2bd', '#e9d8a6',
+                        '#ee9b00', '#ca6702', '#bb3e03'
                     ];
-
 
                     return {
                         label: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
@@ -146,13 +183,15 @@
                             y: point.y
                         })),
                         borderColor: colors[index % colors.length],
-                        backgroundColor: 'rgba(255, 255, 255, 0)', // Fondo transparente
-                        borderWidth: 3, // Línea más opaca y más gruesa
+                        backgroundColor: 'rgba(255, 255, 255, 0)',
+                        borderWidth: 3,
                         tension: 1,
-                        pointRadius: 0, // Sin puntos
-                        pointHoverRadius: 3 // Mostrar puntos pequeños al pasar el cursor
+                        pointRadius: 0,
+                        pointHoverRadius: 3
                     };
                 }).filter(Boolean);
+
+                console.log("Datasets para el gráfico:", datasets); // Log de los datasets antes de generar el gráfico
 
                 const ctx = document.getElementById('weeklyTempChart').getContext('2d');
                 new Chart(ctx, {
@@ -170,7 +209,7 @@
                         plugins: {
                             legend: {
                                 labels: {
-                                    color: '#FFFFFF', // Color de texto de la leyenda
+                                    color: '#FFFFFF',
                                     font: {
                                         size: 14
                                     }
@@ -189,7 +228,7 @@
                                     }
                                 },
                                 grid: {
-                                    color: '#FFFFFF' // Líneas de cuadrícula más visibles
+                                    color: '#FFFFFF'
                                 },
                                 ticks: {
                                     color: '#FFFFFF',
@@ -225,7 +264,6 @@
         }
 
         renderChart();
-
     </script>
 </body>
 

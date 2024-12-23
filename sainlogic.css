@@ -563,6 +563,42 @@ table tbody tr:hover {
 }
 
 
+/* Contenedor de progreso */
+.loading-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: var(--chart-background);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.progress-container {
+    width: 100%;
+    max-width: 400px;
+    background-color: #f3f3f3;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 20px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.loading-progress p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--primary-color);
+}
+
 
 /* Responsividad */
 @media (max-width: 768px) {

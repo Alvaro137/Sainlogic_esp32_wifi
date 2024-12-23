@@ -46,13 +46,6 @@
                 </div>
             </div>
             <div class="data-card">
-                <div class="data-icon">🔥</div>
-                <div class="data-info">
-                    <h3>Sensación Térmica</h3>
-                    <p id="heatIndexData">No disponible</p>
-                </div>
-            </div>
-            <div class="data-card">
                 <div class="data-icon">💧</div>
                 <div class="data-info">
                     <h3>Humedad</h3>
@@ -105,6 +98,13 @@
                 <button type="submit">Filtrar datos</button>
             </form>
         </div>
+        <div id="loadingProgress" class="loading-progress" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p id="progressText">Cargando: 0%</p>
+        </div>
+
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner-modern"></div>
             <p class="loading-text">Cargando...</p>
