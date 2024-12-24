@@ -123,7 +123,7 @@ function fetchDataAndPlotAll(apiUrl, charts) {
         loading.style.display = "flex";
 
         let currentStartDate = new Date(startDateInput);
-        const finalEndDate = new Date(endDateInput);
+        let finalEndDate = new Date(endDateInput);
         const currentDate = new Date();
         const earliestDate = new Date("2024-11-30T11:17:40Z");
         const allData = [];
@@ -131,6 +131,9 @@ function fetchDataAndPlotAll(apiUrl, charts) {
 
         if (currentStartDate < earliestDate) {
             currentStartDate = earliestDate;
+        }
+        if (finalEndDate > currentDate) {
+            finalEndDate = currentDate;
         }
 
         const totalRequests = Math.ceil((finalEndDate - currentStartDate) / (2 * 24 * 60 * 60 * 1000)); // Número total de bloques
@@ -160,10 +163,13 @@ function fetchDataAndPlotAll(apiUrl, charts) {
                     }
 
                     completedRequests++;
-                    const progress = (completedRequests / totalRequests) * 100;
+                    const progress = (completedRequests / totalRequests) * 90;
                     updateProgressBar(progress);
+                    if (progress > 100) {
+                        break;
+                    }
                 }
-
+                updateProgressBar(95);
                 processAndPlotData({ feeds: allData }, charts, startDateInput, endDateInput);
                 loading.style.display = "none";
 
@@ -203,6 +209,7 @@ function processAndPlotData(data, charts, startDateInput, endDateInput) {
         humedad: 500,
         direccionViento: 80
     };
+    updateProgressBar(100);
 
     fields.forEach(field => {
         let fieldData = parseFieldData(data.feeds, field);
@@ -210,7 +217,6 @@ function processAndPlotData(data, charts, startDateInput, endDateInput) {
         // Aplicar la media móvil con el período correspondiente para cada campo
         const movingAveragePeriod = movingAveragePeriods[field];
         fieldData = movingAverage(fieldData, movingAveragePeriod);
-
         plotData(charts[field], fieldData);
     });
 
