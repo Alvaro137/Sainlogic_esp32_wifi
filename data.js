@@ -73,33 +73,56 @@ function hasTimeExceeded(lastDate, tmax) {
  * Obtiene y muestra los últimos datos de todos los campos.
  */
 function fetchLatestData(apiUrl) {
+    const loadingIndicator = document.getElementById("loadingIndicator");
+
+    // Mostrar el indicador de carga
+    loadingIndicator.classList.remove("hidden");
+    loadingIndicator.classList.add("visible");
+
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
             const latest = data.feeds[data.feeds.length - 1];
-            document.getElementById("rainData").textContent = `${parseFloat(latest.field1).toFixed(2) || 0} mm`;
+            const latestRain = parseFloat(latest.field1) || 0;
+
+            // Encontrar el dato de lluvia hace 24 horas
+            const date24HoursAgo = new Date(new Date(latest.created_at) - 24 * 60 * 60 * 1000);
+            const rain24HoursAgoFeed = data.feeds.find(feed => {
+                const feedDate = new Date(feed.created_at);
+                return feedDate >= date24HoursAgo;
+            });
+
+            const rain24HoursAgo = parseFloat(rain24HoursAgoFeed?.field1) || 0;
+            const rainDifference = latestRain - rain24HoursAgo;
+
+            document.getElementById("rainData").textContent = `${rainDifference.toFixed(2)} mm`;
             document.getElementById("tempData").textContent = `${parseFloat(latest.field2).toFixed(2) || 0} °C`;
             document.getElementById("windData").textContent = `${parseFloat(latest.field4).toFixed(2) || 0} km/h`;
             document.getElementById("gustData").textContent = `${parseFloat(latest.field5).toFixed(2) || 0} km/h`;
             document.getElementById("humidityData").textContent = `${parseFloat(latest.field6).toFixed(2) || 0}%`;
 
-            const temperature = parseFloat(latest.field2);
-            const windDirection = parseFloat(latest.field3) + 22.0;
+            let windDirection = parseFloat(latest.field3) + 22.0;
             if (windDirection >= 360.0) {
-                windDirection = windDirection - 360.0
+                windDirection = windDirection - 360.0;
             }
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const index = Math.floor((windDirection) / 45) % 8; // Convertir grados a un índice de los puntos cardinales
-            const windDirectionText = directions[index];
-            document.getElementById("directionData").textContent = `${windDirection.toFixed(2) || 0} ° (${windDirectionText})`;
-            const windSpeed = parseFloat(latest.field4);
-            const humidity = parseFloat(latest.field6);
 
-            // Verificar si han pasado más de tmax minutos desde el último dato
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.floor(windDirection / 45) % 8;
+            const windDirectionText = directions[index];
+
+            document.getElementById("directionData").textContent = `${windDirection.toFixed(2)} ° (${windDirectionText})`;
+
+            // Verificar si han pasado más de 10 minutos desde el último dato
             hasTimeExceeded(latest.created_at, 10);
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => {
+            // Ocultar el indicador de carga
+            loadingIndicator.classList.remove("visible");
+            loadingIndicator.classList.add("hidden");
+        });
 }
+
 
 function updateProgressBar(percentage) {
     const progressBar = document.getElementById('progressBar');

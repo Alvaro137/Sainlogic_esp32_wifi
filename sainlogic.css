@@ -16,12 +16,6 @@
     /* Blanco para gráficos */
     --chart-border: #e0e0e0;
     /* Gris claro para bordes */
-    --table-even: #f9f9f9;
-    /* Fila par gris claro */
-    --table-hover: #e3f2fd;
-    /* Azul muy claro al pasar por encima */
-    --table-odd: #ffffff;
-    /* Fila impar blanca */
 }
 
 .dark-mode {
@@ -30,7 +24,7 @@
     /* Negro suave para fondo */
     --primary-color: #028090;
     /* Azul profundo y profesional */
-    --secondary-color: #b08968;
+    --secondary-color: #005f73;
     /* Marrón suave para contraste */
     --text-color: #d6d6d6;
     /* Gris claro para texto */
@@ -41,13 +35,7 @@
     --chart-background: #1a1a1a;
     /* Fondo oscuro para gráficos */
     --chart-border: #2c2c2c;
-    /* Gris medio oscuro para bordes */
-    --table-even: #1e1e1e;
-    /* Fila par gris oscuro */
-    --table-hover: #3a5a6e;
-    /* Azul grisáceo al pasar por encima */
-    --table-odd: #181818;
-    /* Fila impar negro suave */
+
 }
 
 
@@ -217,6 +205,18 @@ a {
 .hidden {
     display: none;
 }
+
+.hidden {
+    display: none;
+}
+
+.visible {
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    color: #555;
+}
+
 
 /* Tarjetas de datos */
 .data-card {
@@ -394,166 +394,49 @@ a {
     /* Añadido el margen inferior */
 }
 
-
-
-#prevision-container {
-    width: 80%;
-    margin: 20px auto;
-    background-color: var(--chart-background);
-    padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-h1 {
-    text-align: center;
-    color: var(--text-color);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th,
-td {
-    padding: 10px;
-    text-align: center;
-    border: 1px solid var(--chart-border);
-}
-
-th {
-    background-color: var(--tab-color);
-    color: var(--text-color);
-}
-
-tbody tr:nth-child(odd) {
-    background-color: var(--table-odd);
-}
-
-tbody tr:hover {
-    background-color: var(--table-hover);
-}
-
-/* Estilo general de las tablas */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 1rem;
-    text-align: left;
+#loadingIndicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     background-color: var(--background-color);
-    border-radius: 8px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
 }
 
-table thead tr {
-    background-color: var(--secondary-color);
-    color: var(--background-color);
-    text-align: center;
+#loadingIndicator.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--primary-color);
+    font-size: 1.2rem;
     font-weight: bold;
+    text-transform: uppercase;
+    animation: textFade 2s ease-in-out infinite;
 }
 
-table th,
-table td {
-    padding: 12px 15px;
-    border: 1px solid var(--chart-border);
-}
+@keyframes textFade {
 
-table tbody tr:nth-child(even) {
-    background-color: var(--table-even);
-}
-
-table tbody tr:hover {
-    background-color: var(--table-hover);
-}
-
-/* Botón de carga */
-#fetchForecastBtn {
-
-    background-color: var(--primary-color);
-    color: var(--background-color);
-    border: none;
-    padding: 10px 20px;
-    font-size: 1rem;
-    border-radius: 5px;
-    cursor: pointer;
-    margin: 10px 0;
-    transition: background-color 0.3s ease;
-}
-
-#fetchForecastBtn:hover {
-    background-color: var(--secondary-color);
-}
-
-#fetchForecastBtn:active {
-    background-color: var(--secondary-color);
-}
-
-/* Estilo para el contenedor de carga */
-#loading {
-    font-size: 1.5em;
-    color: #007bff;
-    text-align: center;
-    margin-top: 20px;
-    font-weight: bold;
-}
-
-/* Animación de pulsación para el texto */
-@keyframes pulse {
-    0% {
-        opacity: 0.5;
-    }
-
-    50% {
+    0%,
+    100% {
         opacity: 1;
     }
 
-    100% {
+    50% {
         opacity: 0.5;
     }
 }
 
-/* Contenedor de carga */
-.loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    /* Pequeño espaciado entre el spinner y el texto */
-    background-color: var(--chart-background);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-/* Estilo del spinner moderno */
-.spinner-modern {
-    display: inline-block;
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--tab-color);
-    /* Borde gris */
-    border-top: 4px solid var(--primary-color);
-    /* Borde animado con color */
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-/* Animación de giro */
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
 
 /* Estilo del texto */
 .loading p {

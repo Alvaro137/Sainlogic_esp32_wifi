@@ -14,7 +14,6 @@
         <div class="tab-buttons">
             <button class="tablink active" onclick="openTab('actual')">Datos Actuales</button>
             <button class="tablink" onclick="openTab('grafico')">Gráfico Histórico</button>
-            <button class="tablink" onclick="openTab('prevision')">Previsión</button>
         </div>
         <div class="theme-toggle">
             <button id="darkModeToggle">☀️</button>
@@ -23,6 +22,12 @@
 
 
     <div id="actual" class="tabcontent">
+        <div id="loadingIndicator" class="hidden">
+
+            <div class="loading-text">Cargando datos...</div>
+        </div>
+
+
         <div id="disclaimer" class="hidden">
             <p>No se han detectado cambios en los datos durante los últimos 10 minutos. Hay 2 posibles soluciones:</p>
             <p>1) Presiona el botón "EN":</p>
@@ -34,7 +39,7 @@
             <div class="data-card">
                 <div class="data-icon">🌧️</div>
                 <div class="data-info">
-                    <h3>Lluvia</h3>
+                    <h3>Lluvia 24h</h3>
                     <p id="rainData">0 mm</p>
                 </div>
             </div>
@@ -126,58 +131,6 @@
         <div id="chartContainerDireccionViento" style="height: 370px; width: 100%;"></div>
     </div>
 
-    <div id="prevision" class="tabcontent">
-        <button id="fetchForecastBtn">Cargar Previsión</button>
-        <div id="loading" class="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Cargando...</p>
-        </div>
-
-        <h3>Condiciones Actuales</h3>
-        <table id="tablaActual">
-            <thead>
-                <tr>
-                    <th>Resumen</th>
-                    <th>Temperatura (°C)</th>
-                    <th>Viento (km/h, dirección)</th>
-                    <th>Precipitación (mm)</th>
-                    <th>Nubosidad (%)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <h3>Previsión Horaria</h3>
-        <table id="tablaHoraria">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Resumen</th>
-                    <th>Temperatura (°C)</th>
-                    <th>Viento (m/s, dirección)</th>
-                    <th>Precipitación (mm)</th>
-                    <th>Nubosidad (%)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <h3>Previsión Diaria</h3>
-        <table id="tablaDiaria">
-            <thead>
-                <tr>
-                    <th>Día</th>
-                    <th>Resumen</th>
-                    <th>Temp. Mín. (°C)</th>
-                    <th>Temp. Máx. (°C)</th>
-                    <th>Viento (km/h, dirección)</th>
-                    <th>Precipitación (mm)</th>
-                    <th>Nubosidad (%)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
 
 
 
