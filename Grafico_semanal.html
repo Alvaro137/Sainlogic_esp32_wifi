@@ -4,263 +4,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfico Semanal de Temperaturas</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <title>Temperaturas Semanales</title>
     <style>
         :root {
-            --background-color: #121212;
+            --background-color: #ffffff;
             --primary-color: #005f73;
             --secondary-color: #0a9396;
-            --text-color: #e0e0e0;
-            --legend-bg: rgba(10, 147, 150, 0.2);
-            --title-color: #94d2bd;
+            --text-color: #001219;
+            --tab-color: #f4f4f4;
+            --tab-active-color: #005f73;
+            --chart-background: #ffffff;
+            --chart-border: #e0e0e0;
+            --table-even: #f9f9f9;
+            --table-hover: #e3f2fd;
+            --table-odd: #ffffff;
         }
 
         body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
             background-color: var(--background-color);
             color: var(--text-color);
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            text-align: center;
         }
 
         h1 {
-            text-align: center;
-            margin: 10px;
-            color: var(--title-color);
-            font-size: 1.8rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .chart-container {
-            width: 100%;
-            max-width: 1200px;
-            height: 80%;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin: 20px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         canvas {
+            margin: 20px auto;
+            background-color: var(--chart-background);
+            border: 1px solid var(--chart-border);
+        }
+
+        #loader {
+            margin: 20px auto;
             width: 100%;
+            background-color: var(--chart-border);
+            height: 20px;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
             height: 100%;
+            width: 5%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
         }
     </style>
 </head>
 
 <body>
-    <h1>Temperaturas Semanales</h1>
-    <div class="chart-container">
-        <canvas id="weeklyTempChart"></canvas>
+    <h1>Temperaturas de los Últimos 7 Días</h1>
+    <div id="loader">
+        <div id="progress-bar"></div>
     </div>
+    <canvas id="tempChart" width="800" height="400"></canvas>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script>
-        // API URL para obtener solo los datos de temperatura (field2)
-        const API_URL = "https://api.thingspeak.com/channels/2770121/fields/2.json";
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        const loader = document.getElementById('loader');
+        const progressBar = document.getElementById('progress-bar');
+        const apiBaseUrl = "https://api.thingspeak.com/channels/2770121/fields/2.json";
+        const chartColors = ['#005f73', '#0a9396', '#94d2bd', '#e9d8a6', '#ee9b00', '#ca6702', '#bb3e03'];
 
-        // Función para procesar los datos obtenidos
-        function parseFieldData(feeds) {
-            return feeds.map(feed => ({
-                x: new Date(feed.created_at),
-                y: parseFloat(feed.field2) || null
-            })).filter(point => point.y !== null);
-        }
-
-        // Función para aplicar una media móvil
-        function movingAverage(data, numdatos) {
-            const smoothedData = [];
-            const periodo = Math.floor(data.length / numdatos);
-            for (let i = 0; i < data.length; i++) {
-                const start = Math.max(i - periodo + 1, 0);
-                const subset = data.slice(start, i + 1);
-                const average = subset.reduce((sum, point) => sum + point.y, 0) / subset.length;
-                smoothedData.push({ x: data[i].x, y: average });
-            }
-            return smoothedData;
-        }
-
-        // Función para dividir los datos por días
-        function divideDataByDays(data) {
-            const days = Array(7).fill(null).map(() => []);
+        function getDayName(dayOffset) {
+            const daysOfWeek = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
             const now = new Date();
-
-            data.forEach(point => {
-                const dayIndex = (now.getDay() - point.x.getDay() + 7) % 7;
-                if (dayIndex < 7) {
-                    days[dayIndex].push(point);
-                }
-            });
-
-            return days.reverse();
+            const day = new Date(now);
+            day.setDate(now.getDate() - dayOffset);
+            return daysOfWeek[day.getDay()];
         }
 
-        // Función para obtener los datos de un rango de fechas
-        async function fetchDailyData(startDate, endDate) {
-            const apiUrl = `${API_URL}?start=${startDate.toISOString().slice(0, 19).replace("T", " ")}&end=${endDate.toISOString().slice(0, 19).replace("T", " ")}&results=8000`;
-            console.log("URL de la API (fetchDailyData):", apiUrl); // Log de la URL de la API
+        async function fetchTemperatureData(dayOffset) {
+            const now = new Date();
+            const start = new Date(now);
+            start.setDate(now.getDate() - dayOffset);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(start);
+            end.setHours(23, 59, 59, 999);
+
+            const startISO = start.toISOString();
+            const endISO = end.toISOString();
+
+            const url = `${apiBaseUrl}?start=${startISO}&end=${endISO}`;
+            console.log(`Fetching data for day offset ${dayOffset}: ${url}`);
 
             try {
-                const response = await fetch(apiUrl);
+                const response = await fetch(url);
                 const data = await response.json();
-                console.log("Datos obtenidos de la API:", data); // Log de los datos obtenidos de la API
-                return data.feeds || [];
+                return data.feeds.map(feed => {
+                    const date = new Date(feed.created_at);
+                    return {
+                        time: date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0'),
+                        temp: parseFloat(feed.field2)
+                    };
+                }).filter(entry => !isNaN(entry.temp));
             } catch (error) {
-                console.error("Error al obtener los datos de la API:", error);
+                console.error(`Error fetching data for day offset ${dayOffset}:`, error);
                 return [];
             }
         }
 
-        // Función para obtener los datos de los últimos 7 días
-        async function fetchLastSevenDaysData() {
-            let allFeeds = [];
-            let currentDate = new Date();
-
-            // Realiza 7 fetches para los últimos 7 días
-            for (let i = 0; i < 7; i++) {
-                const endDate = new Date(currentDate); // Final del día actual
-                const startDate = new Date(currentDate);
-                startDate.setDate(currentDate.getDate() - 1); // Inicio del día anterior
-
-                // Obtener datos para el día actual
-                const dailyData = await fetchDailyData(startDate, endDate);
-                allFeeds = allFeeds.concat(dailyData);
-
-                // Restar un día para el siguiente fetch
-                currentDate.setDate(currentDate.getDate() - 1);
+        async function fetchAllTemperatureData() {
+            const promises = [];
+            for (let i = 7; i >= 1; i--) {
+                promises.push(fetchTemperatureData(i));
             }
+            progressBar.style.width = '55%';
 
-            console.log("Todos los datos obtenidos para los últimos 7 días:", allFeeds); // Log de todos los datos obtenidos
-            return allFeeds;
+            let completed = 0;
+            const results = await Promise.all(promises.map(async (promise) => {
+                const result = await promise;
+                completed++;
+                progressBar.style.width = `${15 + (completed / 7) * 100}%`;
+                return result;
+            }));
+
+            return results;
         }
 
-        // Función para renderizar el gráfico
         async function renderChart() {
-            try {
-                // Obtener los datos de los últimos 7 días
-                const feeds = await fetchLastSevenDaysData();
+            const temperatureData = await fetchAllTemperatureData();
+            // Obtenemos todas las horas posibles y las ordenamos
+            const times = [...new Set(temperatureData.flat().map(entry => entry.time))];
+            times.sort();  // Esto ordena las horas correctamente de 00:00 a 23:59
+            progressBar.style.width = '60%'
 
-                // Procesar los datos para obtener solo la temperatura (field2)
-                let fieldData = parseFieldData(feeds);
+            const datasets = temperatureData.map((temps, index) => ({
+                label: getDayName(7 - index),
+                data: times.map(time => {
+                    const tempEntry = temps.find(entry => entry.time === time);
+                    return tempEntry ? tempEntry.temp : null;
+                }),
+                borderColor: chartColors[index],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                tension: 0.3
+            }));
+            progressBar.style.width = '90%'
 
-                // Suavizar los datos con una media móvil
-                const numPuntosDeseados = 300;
-                fieldData = movingAverage(fieldData, numPuntosDeseados);
-
-                // Dividir los datos por días
-                const weeklyData = divideDataByDays(fieldData);
-
-                // Eliminar el primer y último punto de cada día para evitar líneas extrañas
-                const datasets = weeklyData.map((dayData, index) => {
-                    if (dayData.length === 0) return null;
-
-                    console.log(`Datos del día ${index + 1} antes de eliminar el primer y último punto:`, dayData); // Log antes de eliminar el primer y último punto
-
-                    // Eliminar el primer y último punto
-                    dayData = dayData.slice(1, dayData.length - 1);
-
-                    console.log(`Datos del día ${index + 1} después de eliminar el primer y último punto:`, dayData); // Log después de eliminar el primer y último punto
-
-                    const dayLabel = new Date(dayData[0].x).toLocaleDateString("es-ES", {
-                        weekday: "long"
-                    });
-
-                    const colors = [
-                        '#005f73', '#0a9396', '#94d2bd', '#e9d8a6',
-                        '#ee9b00', '#ca6702', '#bb3e03'
-                    ];
-
-                    return {
-                        label: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
-                        data: dayData.map(point => ({
-                            x: point.x.getHours() * 60 + point.x.getMinutes(),
-                            y: point.y
-                        })),
-                        borderColor: colors[index % colors.length],
-                        backgroundColor: 'rgba(255, 255, 255, 0)',
-                        borderWidth: 3,
-                        tension: 1,
-                        pointRadius: 0,
-                        pointHoverRadius: 3
-                    };
-                }).filter(Boolean);
-
-                console.log("Datasets para el gráfico:", datasets); // Log de los datasets antes de generar el gráfico
-
-                const ctx = document.getElementById('weeklyTempChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: Array.from({ length: 1440 }, (_, i) => {
-                            const hours = Math.floor(i / 60).toString().padStart(2, '0');
-                            const minutes = (i % 60).toString().padStart(2, '0');
-                            return `${hours}:${minutes}`;
-                        }),
-                        datasets: datasets
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: times,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
                     },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                labels: {
-                                    color: '#FFFFFF',
-                                    font: {
-                                        size: 14
-                                    }
-                                }
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hora del Día'
                             }
                         },
-                        scales: {
-                            x: {
-                                type: 'linear',
-                                title: {
-                                    display: true,
-                                    text: 'Hora del día',
-                                    color: '#FFFFFF',
-                                    font: {
-                                        size: 16
-                                    }
-                                },
-                                grid: {
-                                    color: '#FFFFFF'
-                                },
-                                ticks: {
-                                    color: '#FFFFFF',
-                                    callback: (value) => {
-                                        const hours = Math.floor(value / 60).toString().padStart(2, '0');
-                                        const minutes = (value % 60).toString().padStart(2, '0');
-                                        return `${hours}:${minutes}`;
-                                    }
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Temperatura (°C)',
-                                    color: '#FFFFFF',
-                                    font: {
-                                        size: 16
-                                    }
-                                },
-                                grid: {
-                                    color: '#FFFFFF'
-                                },
-                                ticks: {
-                                    color: '#FFFFFF'
-                                }
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)'
                             }
                         }
                     }
-                });
-            } catch (error) {
-                console.error("Error al procesar o renderizar el gráfico:", error);
-            }
+                }
+            });
+
+            loader.style.display = 'none';
         }
 
         renderChart();
