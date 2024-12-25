@@ -112,6 +112,7 @@ body {
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    margin-left: 5px;
 }
 
 .theme-toggle button:hover {
@@ -262,10 +263,8 @@ a {
     background-color: var(--background-color);
     padding: 20px;
     border-radius: 8px;
-    width: 100%;
-    max-width: 400px;
+    max-width: 70%;
     margin: 0 auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Etiquetas de los campos */
@@ -279,7 +278,7 @@ a {
 
 /* Inputs de fecha y hora */
 #dateFilter input[type="datetime-local"] {
-    width: 95%;
+    width: 90%;
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid var(--tab-color);
@@ -296,7 +295,7 @@ a {
 
 /* Botón de submit */
 #dateFilter button[type="submit"] {
-    width: 100%;
+    width: 95%;
     padding: 12px;
     background-color: var(--primary-color);
     color: #fff;
@@ -319,57 +318,23 @@ a {
     align-items: center;
     justify-content: center;
     width: 100%;
-
-}
-
-.rain-data-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--primary-color);
-    color: var(--background-color);
-    padding: 10px;
-    border-radius: 10px;
-    width: 50%;
-    margin-bottom: 30px;
-    margin-top: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.rain-data-icon {
-    font-size: 40px;
-    margin-right: 20px;
-}
-
-.rain-data-info {
-    text-align: center;
-}
-
-.rain-data-info h3 {
-    margin: 0;
-    font-size: 1.5em;
-}
-
-#totalRainData {
-    font-size: 2.4em;
-    font-weight: bold;
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
 
 /* Estilos para el formulario en dispositivos pequeños */
 @media (max-width: 600px) {
     #dateFilter {
-        width: 100%;
+        width: 90%;
         padding: 15px;
+        max-width: 90%;
     }
 
     #dateFilter button[type="submit"] {
         font-size: 14px;
+        width: 100%;
     }
 
-    .rain-data-container {
-        width: 90%;
-
-    }
 }
 
 .chart-container {
@@ -527,9 +492,6 @@ a {
         /* Reduce el espaciado */
     }
 
-    .rain-data-container {
-        width: 100%;
 
-    }
 
 }

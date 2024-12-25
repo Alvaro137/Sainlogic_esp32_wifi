@@ -1,32 +1,25 @@
-/**
- * Calcula la lluvia acumulada en un rango de fechas
- */
-/**
- * Calcula la lluvia acumulada en un rango de fechas y solo suma lluvia mayor a 0.3 mm
- * Solo se suma si el valor actual es mayor a 0.3 mm y el valor anterior es <= 0.3 mm.
- */
-function calculateTotalRain(feeds, startDate, endDate, minRain = 0.3) {
-    let totalRain = 0;
-
+function calculateTotalRain(feeds, startDate, endDate) {
     // Filtra las feeds que están dentro del rango de fechas
     const filteredFeeds = feeds.filter(feed => {
         const feedDate = new Date(feed.created_at);
         return feedDate >= new Date(startDate) && feedDate <= new Date(endDate);
     });
 
-    // Recorre las feeds filtradas para aplicar la lógica
-    for (let i = 1; i < filteredFeeds.length; i++) {
-        const currentRain = parseFloat(filteredFeeds[i].field1) || 0;
-        const lastRain = parseFloat(filteredFeeds[i - 1].field1) || 0;
-
-        // Solo sumamos si el valor actual es mayor a minRain y el anterior es <= minRain
-        if (currentRain > minRain && lastRain <= minRain) {
-            totalRain += currentRain;
-        }
+    // Verifica si hay suficientes datos después del filtrado
+    if (filteredFeeds.length < 2) {
+        return 0; // No hay suficiente información para calcular la diferencia
     }
 
-    return totalRain;
+    // Obtén la lluvia inicial y final
+    const firstRain = parseFloat(filteredFeeds[0].field1) || 0;
+    const lastRain = parseFloat(filteredFeeds[filteredFeeds.length - 1].field1) || 0;
+    console.log(filteredFeeds[0]);
+    console.log(filteredFeeds[filteredFeeds.length - 1]);
+
+    // Calcula la diferencia
+    return lastRain - firstRain;
 }
+
 
 
 
@@ -83,19 +76,13 @@ function fetchLatestData(apiUrl) {
         .then(response => response.json())
         .then(data => {
             const latest = data.feeds[data.feeds.length - 1];
-            const latestRain = parseFloat(latest.field1) || 0;
-
-            // Encontrar el dato de lluvia hace 24 horas
-            const date24HoursAgo = new Date(new Date(latest.created_at) - 24 * 60 * 60 * 1000);
-            const rain24HoursAgoFeed = data.feeds.find(feed => {
-                const feedDate = new Date(feed.created_at);
-                return feedDate >= date24HoursAgo;
-            });
-
-            const rain24HoursAgo = parseFloat(rain24HoursAgoFeed?.field1) || 0;
-            const rainDifference = latestRain - rain24HoursAgo;
-
-            document.getElementById("rainData").textContent = `${rainDifference.toFixed(2)} mm`;
+            const latestrain = parseFloat(latest.field1) || 0;
+            const latestdate = new Date(new Date(latest.created_at));
+            const first = data.feeds[0];
+            const firstdate = new Date(new Date(first.created_at));
+            const firstrain = parseFloat(first.field1);
+            const raindifference = latestrain - firstrain;
+            document.getElementById("rainData").textContent = `${raindifference.toFixed(2)} mm`;
             document.getElementById("tempData").textContent = `${parseFloat(latest.field2).toFixed(2) || 0} °C`;
             document.getElementById("windData").textContent = `${parseFloat(latest.field4).toFixed(2) || 0} km/h`;
             document.getElementById("gustData").textContent = `${parseFloat(latest.field5).toFixed(2) || 0} km/h`;
