@@ -13,8 +13,6 @@ function calculateTotalRain(feeds, startDate, endDate) {
     // Obtén la lluvia inicial y final
     const firstRain = parseFloat(filteredFeeds[0].field1) || 0;
     const lastRain = parseFloat(filteredFeeds[filteredFeeds.length - 1].field1) || 0;
-    console.log(filteredFeeds[0]);
-    console.log(filteredFeeds[filteredFeeds.length - 1]);
 
     // Calcula la diferencia
     return lastRain - firstRain;
@@ -55,7 +53,7 @@ function hasTimeExceeded(lastDate, tmax) {
         disclaimerElement.classList.add('show-disclaimer');
         disclaimerElement.innerHTML = `<p>No se han detectado cambios en los datos durante los últimos ${Math.floor(timeDifference)} minutos. Hay 2 posibles soluciones:</p>` +
             `<p>1) Presiona el botón "EN":</p>` +
-            `<img src="EN.jpg" alt="Advertencia" />` +
+            `<img src="EN.webp" alt="Advertencia" />` +
             `<p>2) Conéctate al wifi ESP32_AP (contraseña: 12345678), y luego presiona configure wifi (TP_Link_AP_7C1E, contraseña: 35019503)</p>`;
     } else {
         disclaimerElement.classList.remove('show-disclaimer');
@@ -82,6 +80,41 @@ function fetchLatestData(apiUrl) {
             const firstdate = new Date(new Date(first.created_at));
             const firstrain = parseFloat(first.field1);
             const raindifference = latestrain - firstrain;
+            // Calcular la diferencia de tiempo en horas
+            const timeDiffHours = (latestdate - firstdate) / (1000 * 60 * 60);
+
+            // Obtener el dato más cercano a las 00:00 pero anterior
+            const midnight = new Date();
+            midnight.setHours(0, 0, 0, 0); // Fija la hora a 00:01
+            let rainAtMidnight = -1;
+            let entryDate = new Date();
+            for (let i = 0; i < data.feeds.length; i++) {
+                entryDate = new Date(data.feeds[i].created_at);
+                if (entryDate > midnight) {
+                    rainAtMidnight = parseFloat(data.feeds[i].field1) || -1;
+                    break; // Detenerse en el primer dato posterior a las 00:00
+                }
+            }
+
+            
+            const raindifferenceSinceMidnight = latestrain - rainAtMidnight;
+
+            // Actualizar los valores en la UI
+            if (rainAtMidnight == -1) { 
+                const hour = midnight.getHours().toString().padStart(2, '0');
+                const minute = midnight.getMinutes().toString().padStart(2, '0');
+                document.getElementById("rainMidnightHour").textContent = `Lluvia desde las ${hour}:${minute}h`;
+                document.getElementById("rainSinceMidnight").textContent = `No data`;
+            }
+            else{
+                const hour = entryDate.getHours().toString().padStart(2, '0');
+                const minute = entryDate.getMinutes().toString().padStart(2, '0');
+                document.getElementById("rainMidnightHour").textContent = `Lluvia desde las ${hour}:${minute}h`;
+                document.getElementById("rainSinceMidnight").textContent = `${raindifferenceSinceMidnight.toFixed(2)} mm`;
+            }
+            
+            document.getElementById("lastEntryData").textContent = `${latestdate.toLocaleString()}`;
+            document.getElementById("rainHourDiff").textContent = `Lluvia ${timeDiffHours.toFixed(0)}h`;
             document.getElementById("rainData").textContent = `${raindifference.toFixed(2)} mm`;
             document.getElementById("tempData").textContent = `${parseFloat(latest.field2).toFixed(2) || 0} °C`;
             document.getElementById("windData").textContent = `${parseFloat(latest.field4).toFixed(2) || 0} km/h`;
