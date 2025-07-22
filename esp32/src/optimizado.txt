@@ -1,0 +1,189 @@
+#include <Arduino.h>
+#include <ESP32TimerInterrupt.h>
+#include <WiFiManager.h> // Para gestionar la conexión WiFi
+#include "ThingSpeak.h"
+
+// Archivos de cabecera personalizados
+#include "ring_buffer.h"
+#include "ppm_tracker.h"
+#include "data_decode.h"
+#include "secrets.h"
+
+// Desactivar Bluetooth y otras características no necesarias
+#include "esp_bt.h"
+#include "esp_system.h"
+
+// Definiciones de pines y constantes
+#define PIN_IN1 5           // GPIO5: Pin para detectar señal baja durante la recepción
+#define PIN_IN2 4           // GPIO4: Pin para salida de datos recibidos
+#define SAMPLE_PERIOD_US 40 // Período de muestreo en microsegundos
+#define MIN_SAMPLES 4       // Mínimo de muestras para sincronizar
+#define MAX_SAMPLES 16      // Máximo de muestras para sincronizar
+
+// Configuración de ThingSpeak
+unsigned long myChannelNumber = 1;
+const char *myWriteAPIKey = "90J22DQBTZEO9P65";
+WiFiClient client;
+
+// Variables de temporizador
+ESP32Timer ITimer(0);
+unsigned long lastTime = 0;
+unsigned long timerDelay = 10000;
+
+// Variables para datos de sensores
+float temperatura, lluvia, humedad, rafaga, viento_medio, direccion_viento;
+
+// Inicialización del tracker PPM
+BinaryPpmTracker tracker(MIN_SAMPLES, MAX_SAMPLES);
+
+// Configuración de WiFi
+void setup_wifi()
+{
+  WiFiManager wifiManager;
+
+  // Portal de configuración si no puede conectarse a WiFi
+  if (!wifiManager.autoConnect("ESP32_AP", "12345678"))
+  { // AP con nombre y contraseña
+    Serial.println("No se pudo conectar a WiFi. Reiniciando...");
+    delay(3000);
+    ESP.restart();
+  }
+
+  Serial.println("Conexión WiFi establecida.");
+  Serial.print("IP local: ");
+  Serial.println(WiFi.localIP());
+
+  // Inicializar ThingSpeak
+  ThingSpeak.begin(client);
+}
+
+// Desactivar Bluetooth (si no es necesario)
+void disable_bluetooth()
+{
+  esp_bt_controller_disable(); // Desactiva el controlador de Bluetooth
+  esp_bt_controller_deinit();  // Libera recursos del Bluetooth
+}
+
+// Desactivar la funcionalidad táctil
+void disable_touch()
+{
+  touchDetachInterrupt(0); // Desactiva el interruptor táctil en el GPIO 0
+  touchDetachInterrupt(2); // Desactiva el interruptor táctil en el GPIO 2
+}
+
+// Desactivar el CPU secundario para ahorro de energía
+void disable_second_core()
+{
+  xTaskCreatePinnedToCore(
+      [](void *)
+      {
+        vTaskDelete(NULL); // Mata la tarea en el segundo núcleo
+      },
+      "Disable Core1",
+      1024,
+      NULL,
+      1,
+      NULL,
+      0);
+}
+
+// Configuración inicial
+void setup()
+{
+  pinMode(PIN_IN1, INPUT);
+  pinMode(PIN_IN2, INPUT);
+  set_sample_pin(PIN_IN2);
+  Serial.begin(115200);
+
+  // Desactivar Bluetooth, touch, y el segundo núcleo
+  disable_bluetooth();
+  disable_touch();
+  disable_second_core();
+
+  setup_wifi();
+
+  // Configuración del temporizador
+  if (ITimer.attachInterruptInterval(SAMPLE_PERIOD_US, sample_input))
+  {
+    Serial.println("Temporizador iniciado correctamente.");
+  }
+  else
+  {
+    Serial.println("Error al configurar el temporizador. Prueba otra frecuencia o intervalo.");
+  }
+}
+
+// Definir las frecuencias de subida
+const int nskip_temp = 4; // Subir temperatura cada 4 muestras
+const int nskip_hum = 10; // Subir humedad cada 10 muestras
+
+// Contadores para el control de subida
+int temp_counter = 0;
+int hum_counter = 0;
+
+// Decodifica el mensaje y envía datos a ThingSpeak con control de frecuencia
+String decode_and_print(const uint8_t *msg)
+{
+  if (check_crc(tracker.get_msg()))
+  {
+    // Decodificar datos y convertirlos a JSON
+    String json_data = "{";
+    json_data += "\"temp_f\": " + String(get_temperature(msg)) + ", ";
+    json_data += "\"humidity_%\": " + String(get_humidity(msg)) + ", ";
+    json_data += "\"wind_dir_deg\": " + String(get_direction(msg)) + ", ";
+    json_data += "\"avr_wind_m/s\": " + String(get_avr_wind_speed(msg)) + ", ";
+    json_data += "\"gust_wind_m/s\": " + String(get_gust_wind_speed(msg)) + ", ";
+    json_data += "\"rain_mm\": " + String(get_rain(msg));
+    json_data += "}";
+
+    // Conversión y almacenamiento en variables globales
+    temperatura = (get_temperature(msg) - 32.0) * (5.0 / 9.0);
+    direccion_viento = get_direction(msg);
+    viento_medio = get_avr_wind_speed(msg) * 3.6; // Conversión a km/h
+    rafaga = get_gust_wind_speed(msg) * 3.6;      // Conversión a km/h
+    humedad = get_humidity(msg);
+    lluvia = get_rain(msg);
+
+    // Incrementar los contadores
+    temp_counter++;
+    hum_counter++;
+
+    // Configurar campos en ThingSpeak según los contadores
+    if (temp_counter >= nskip_temp)
+    {
+      ThingSpeak.setField(2, temperatura); // Campo para la temperatura
+      temp_counter = 0;                    // Reiniciar contador de temperatura
+    }
+
+    if (hum_counter >= nskip_hum)
+    {
+      ThingSpeak.setField(6, humedad); // Campo para la humedad
+      hum_counter = 0;                 // Reiniciar contador de humedad
+    }
+
+    // Los campos que no dependen de los contadores siempre se envían
+    ThingSpeak.setField(1, lluvia);
+    ThingSpeak.setField(3, direccion_viento);
+    ThingSpeak.setField(4, viento_medio);
+    ThingSpeak.setField(5, rafaga);
+
+    // Enviar datos a ThingSpeak
+    int httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    if (httpCode == 200)
+    {
+      Serial.println("Datos enviados a ThingSpeak con éxito.");
+    }
+    else
+    {
+      Serial.print("Error al enviar datos: ");
+      Serial.println(httpCode);
+    }
+
+    return json_data;
+  }
+  else
+  {
+    Serial.println("Error de CRC.");
+    return "Error de CRC.";
+  }
+}

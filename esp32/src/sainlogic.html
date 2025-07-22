@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datos del Sensor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #0078d4;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .data {
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+
+        .status {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 15px;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .loading {
+            color: orange;
+        }
+
+        .connected {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Datos del Sensor</h1>
+        <div id="data">
+            <p class="data">Esperando datos...</p>
+        </div>
+        <p id="status" class="status loading">Conectando al servidor...</p>
+    </div>
+
+    <script>
+        // Crear conexión WebSocket
+        const socket = new WebSocket('ws://192.168.243.122:81');
+
+        const dataContainer = document.getElementById('data');
+        const statusContainer = document.getElementById('status');
+
+        // Función para escalar los datos
+        function processSensorData(rawData) {
+            return {
+                temp_c: (rawData.temp_f - 32) * (5 / 9), // Fahrenheit a Celsius
+                humidity: rawData["humidity_%"],                // Humedad ya está bien
+                wind_dir_deg: rawData.wind_dir_deg,             // Dirección ya está bien
+                wind_avg: rawData["avr_wind_m/s"] * (36 / 10),         // Velocidad promedio (escala por 10)
+                wind_gust: rawData["gust_wind_m/s"] * (36 / 10),       // Velocidad ráfaga (escala por 10)
+                rain_mm: rawData.rain_mm / 10                   // Precipitación (escala por 10)
+            };
+        }
+
+        // Cuando la conexión se abre
+        socket.onopen = () => {
+            console.log('Conectado al WebSocket');
+            statusContainer.textContent = 'Conectado al servidor.';
+            statusContainer.className = 'status connected';
+        };
+
+        // Cuando se recibe un mensaje
+        socket.onmessage = (event) => {
+            console.log('Mensaje recibido:', event.data);
+
+            try {
+                // Analizar mensaje JSON
+                const rawData = JSON.parse(event.data);
+
+                // Escalar y convertir los datos
+                const data = processSensorData(rawData);
+
+                // Actualizar datos en la interfaz
+                dataContainer.innerHTML = `
+                    <p class="data">🌡️ Temperatura: ${data.temp_c.toFixed(2)} °C</p>
+                    <p class="data">💧 Humedad: ${data.humidity} %</p>
+                    <p class="data">🌬️ Dirección del viento: ${data.wind_dir_deg} °</p>
+                    <p class="data">🍃 Velocidad promedio del viento: ${data.wind_avg.toFixed(2)} m/s</p>
+                    <p class="data">💨 Velocidad ráfaga del viento: ${data.wind_gust.toFixed(2)} m/s</p>
+                    <p class="data">☔ Precipitación: ${data.rain_mm.toFixed(2)} mm</p>
+                `;
+            } catch (error) {
+                console.error('Error al analizar o procesar el mensaje:', error);
+                dataContainer.innerHTML = `<p class="data error">Error al recibir datos</p>`;
+            }
+        };
+
+        // Cuando ocurre un error
+        socket.onerror = (error) => {
+            console.error('Error en el WebSocket:', error);
+            statusContainer.textContent = 'Error en la conexión.';
+            statusContainer.className = 'status error';
+        };
+
+        // Cuando la conexión se cierra
+        socket.onclose = () => {
+            console.log('Conexión cerrada');
+            statusContainer.textContent = 'Conexión cerrada.';
+            statusContainer.className = 'status error';
+        };
+    </script>
+
+</body>
+
+</html>
