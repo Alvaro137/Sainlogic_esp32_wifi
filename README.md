@@ -15,7 +15,6 @@ Este proyecto añade conectividad WiFi a la estación meteorológica Sainlogic u
 - **Software**  
   - [PlatformIO](https://platformio.org/) (o ESP‑IDF)  
   - Git  
-  - Navegador moderno  
 
 ## 📖 Descripción general
 
