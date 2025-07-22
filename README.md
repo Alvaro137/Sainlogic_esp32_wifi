@@ -29,7 +29,7 @@ El sistema consta de dos partes:
    - Código principal en `esp32/src/`.
 
 2. **Interfaz web estática**  
-   - Carpeta `web/` con HTML, CSS y JavaScript para mostrar gráficos interactivos y tablas.  
+   - Carpeta `docs/` con HTML, CSS y JavaScript para mostrar gráficos interactivos y tablas.  
    - Archivos principales:
      - `index.html` — punto de inicio  
      - `main.js` — conexión con la API del ESP32  
@@ -61,9 +61,9 @@ pio run --target upload
 ### 2. Desplegar la web
 
 ```bash
-cd ../web
+cd ../docs
 # - Abre index.html localmente
-# - O despliega en GitHub Pages (Settings > Pages > Carpeta /web)
+# - O despliega en GitHub Pages (Settings > Pages > Carpeta /docs)
 ```
 
 ## Ante desconexiones o problemas inesperados
