@@ -3,6 +3,7 @@
 #include <WiFiManager.h>
 #include "ThingSpeak.h"
 #include <esp_task_wdt.h>  // Watchdog
+// #include <WiFiClientSecure.h>  // HTTPS
 
 #include "ring_buffer.h"
 #include "ppm_tracker.h"
@@ -12,12 +13,13 @@
 // Disable default Arduino WDT. Just in case.
 extern "C" {
   void disableCore0WDT();
-  void disableCore1WDT();
+  // void disableCore1WDT();
 }
 
 
 
 // Define DEBUG_SAMPLER to log data packets to serial
+
 // Instead of normal operation
 
 // D1 GPIO5
@@ -36,9 +38,9 @@ extern "C" {
 #define MIN_SAMPLES      4
 #define MAX_SAMPLES     16
 // Number of samples that are skipped
-#define nskip            0
+#define nskip            4 // Avoid sending every sample
 
-// Configuración de ThingSpeak (from secrets.h)
+// ThingSpeak's config (from secrets.h)
 unsigned long myChannelNumber = THINGSPEAK_CHANNEL;
 const char *myWriteAPIKey   = THINGSPEAK_WRITE_API_KEY;
 
@@ -49,7 +51,8 @@ const unsigned long WIFI_RECONNECT_INTERVAL = 60000; // 1 minuto
 #define WDT_TIMEOUT_S 600 //10 min
 
 // Variables de estado global
-WiFiClient client;
+WiFiClient client; // este lo cambiamos para usar WiFiClientSecure si es necesario
+// WiFiClientSecure client;
 ESP32Timer ITimer(0);
 BinaryPpmTracker tracker(MIN_SAMPLES, MAX_SAMPLES);
 int count_for_nskip = 0;
@@ -61,18 +64,20 @@ bool wifiConnected = false;
 #define LOG_WARN(fmt, ...)   Serial.printf("[WARN] " fmt "\n", ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...)  Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
 
-// Conecta o mantiene WiFi
 void connectWiFi() {
   WiFiManager wifiManager;
+  // 2. Config timeouts (in seconds)
+  wifiManager.setConnectTimeout(60);
+  wifiManager.setConfigPortalTimeout(180); // Time that the configuration portal will be active (3 minutes)
   if (wifiManager.autoConnect(WIFI_SSID, WIFI_PASSWORD)) {
-    digitalWrite(LED, LOW);
     wifiConnected = true;
     ThingSpeak.begin(client);
     LOG_INFO("WiFi connected to %s", WIFI_SSID);
   } else {
-    digitalWrite(LED, HIGH);
     wifiConnected = false;
-    LOG_WARN("WiFi portal active or connection failed");
+    LOG_ERROR("Failed to connect and hit timeout");
+    ESP.restart();
+    delay(3000);    // Wait for the restart to complete
   }
 }
 
@@ -102,6 +107,7 @@ void setup() {
       delay(1000);
     }
   }
+
 }
 
 #ifdef DEBUG_SAMPLER
@@ -149,7 +155,6 @@ String decode_and_print(const uint8_t *msg) {
   float rafaga           = get_gust_wind_speed(msg) * 3.6;
   float humedad          = get_humidity(msg);
   float lluvia           = get_rain(msg) * 0.1 - 6.54;
-
   ThingSpeak.setField(1, lluvia);
   ThingSpeak.setField(2, temperatura);
   ThingSpeak.setField(3, direccion_viento);
@@ -180,6 +185,7 @@ void loop() {
 
   if (!wifiConnected) {
     delay(100);
+    LOG_INFO("Waiting for WiFi connection...");
     return;
   }
 
