@@ -38,7 +38,7 @@ El sistema consta de dos partes:
   
 Un ejemplo de web se muestra [aquí](https://alvaro137.github.io/Sainlogic_esp32_wifi/), con datos en tiempo real del clima en Espadaña, Salamanca, y gráficos interactivos filtrables por fecha realizados únicamente con charts.js para visualización rápida, como este:
 <img width="1771" height="369" alt="image" src="https://github.com/user-attachments/assets/e69a65da-aabf-4c33-9742-02d4883170c2" />
-
+>  Hay que tener en cuenta que el esp32 se encuentra en este caso en una zona donde la conexión wifi es altamente inestable, lo que causa frecuentes y largas desconexiones
 ---
 
 ## ⚙️ Instalación y uso
