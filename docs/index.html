@@ -4,158 +4,411 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El tiempo en Espi</title>
-    <link rel="stylesheet" href="sainlogic.css">
-    <link rel="icon" type="image/png" href="favicon2.png">
+    <title>Dashboard Meteorológico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 60px;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 400;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .last-update {
+            color: #666666;
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .metric-card {
+            background: #111111;
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 32px 24px;
+            transition: all 0.2s ease;
+        }
+
+        .metric-card:hover {
+            border-color: #333333;
+            transform: translateY(-1px);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666666;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 300;
+            color: #ffffff;
+            margin-bottom: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .metric-unit {
+            font-size: 0.875rem;
+            color: #888888;
+            font-weight: 400;
+        }
+
+        .temperature .metric-value {
+            color: #ff6b35;
+        }
+
+        .humidity .metric-value {
+            color: #4a9eff;
+        }
+
+        .rainfall .metric-value {
+            color: #00b4d8;
+        }
+
+        .wind .metric-value {
+            color: #52b788;
+        }
+
+        .gust .metric-value {
+            color: #ffd23f;
+        }
+
+        .direction .metric-value {
+            color: #9d4edd;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: #666666;
+            font-size: 0.875rem;
+        }
+
+        .loading::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid #333333;
+            border-top: 2px solid #666666;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: #ff6b35;
+            font-size: 0.875rem;
+            background: #1a0a0a;
+            border: 1px solid #2a1a1a;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .dashboard {
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out 0.2s forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 16px;
+            }
+
+            .header {
+                margin-bottom: 40px;
+                padding-bottom: 24px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .dashboard {
+                gap: 16px;
+            }
+
+            .metric-card {
+                padding: 24px 20px;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="tab">
-        <div class="tab-buttons">
-            <button class="tablink active" onclick="openTab('actual')">Datos Actuales</button>
-            <button class="tablink" onclick="openTab('grafico')">Gráfico Histórico</button>
+    <div class="container">
+        <header class="header">
+            <h1>Estación Meteorológica</h1>
+            <div class="last-update" id="lastUpdate">Inicializando...</div>
+        </header>
+
+        <div id="loading" class="loading">
+            Cargando datos
         </div>
-        <div class="theme-toggle">
-            <button id="darkModeToggle">☀️</button>
+
+        <div id="error" class="error" style="display: none;">
+            Error de conexión. Reintentando...
         </div>
+
+        <main id="dashboard" class="dashboard" style="display: none;">
+            <div class="metric-card temperature">
+                <div class="metric-label">Temperatura</div>
+                <div class="metric-value" id="temperatura">--</div>
+                <div class="metric-unit">°C</div>
+            </div>
+
+            <div class="metric-card humidity">
+                <div class="metric-label">Humedad Relativa</div>
+                <div class="metric-value" id="humedad">--</div>
+                <div class="metric-unit">%</div>
+            </div>
+
+            <div class="metric-card rainfall">
+                <div class="metric-label">Lluvia (24h)</div>
+                <div class="metric-value" id="lluviaDiaria">--</div>
+                <div class="metric-unit">mm</div>
+            </div>
+
+            <div class="metric-card wind">
+                <div class="metric-label">Velocidad del Viento</div>
+                <div class="metric-value" id="vientoMedio">--</div>
+                <div class="metric-unit">m/s</div>
+            </div>
+
+            <div class="metric-card gust">
+                <div class="metric-label">Ráfaga Máxima</div>
+                <div class="metric-value" id="rafaga">--</div>
+                <div class="metric-unit">m/s</div>
+            </div>
+
+            <div class="metric-card direction">
+                <div class="metric-label">Dirección del Viento</div>
+                <div class="metric-value" id="direccionViento">--</div>
+                <div class="metric-unit">°</div>
+            </div>
+        </main>
     </div>
 
+    <script>
+        const API_URL = 'https://api.thingspeak.com/channels/2770121/feeds/last.json';
+        const FEEDS_API_URL = 'https://api.thingspeak.com/channels/2770121/feeds.json?results=500';
 
-    <div id="actual" class="tabcontent">
-        <div id="loadingIndicator" class="hidden">
+        const fieldMap = {
+            lluviaAcumulada: "field1",
+            temperatura: "field2",
+            direccionViento: "field3",
+            vientoMedio: "field4",
+            rafaga: "field5",
+            humedad: "field6",
+        };
 
-            <div class="loading-text">Cargando datos...</div>
-        </div>
+        let dailyRainfall = null;
 
+        const calculateDailyRain = (feeds, currentRain) => {
+            if (!feeds || feeds.length < 2) return null;
 
-        <div id="disclaimer" class="hidden">
-            <p>No se han detectado cambios en los datos durante los últimos 10 minutos. Hay 2 posibles soluciones:</p>
-            <p>1) Presiona el botón "EN":</p>
-            <img src="EN.webp" alt="Advertencia" />
-            <p>2) Conectate al wifi ESP32_AP (contraseña: 12345678), y luego presionar configure wifi (TP_Link_AP_7C1E,
-                contraseña:35019503)</p>
-        </div>
-        <div class="current-data-container">
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-            <div class="data-card">
-                <div class="data-icon">🕑</div>
-                <div class="data-info">
-                    <h3 id="lastEntry">Último dato</h3>
-                    <p id="lastEntryData">Null</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">🌧️</div>
-                <div class="data-info">
-                    <h3 id="rainHourDiff">Lluvia 24h</h3>
-                    <p id="rainData">0 mm</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">🌧️</div>
-                <div class="data-info">
-                    <h3 id="rainMidnightHour">Lluvia desde las 00:00</h3>
-                    <p id="rainSinceMidnight">0 mm</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">🌡️</div>
-                <div class="data-info">
-                    <h3>Temperatura</h3>
-                    <p id="tempData">0 °C</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">💧</div>
-                <div class="data-info">
-                    <h3>Humedad</h3>
-                    <p id="humidityData">0%</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">🌬️</div>
-                <div class="data-info">
-                    <h3>Viento Medio</h3>
-                    <p id="windData">0 km/h</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">💨</div>
-                <div class="data-info">
-                    <h3>Ráfaga</h3>
-                    <p id="gustData">0 km/h</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-icon">🧭</div>
-                <div class="data-info">
-                    <h3>Dirección del viento</h3>
-                    <p id="directionData">0</p>
-                </div>
-            </div>
-            <div class="data-card">
-                <div class="data-info">
-                    <div class="data-icon">📈</div>
-                    <h3>
-                        Pulsa para ver el gráfico semanal de temperaturas:
-                    </h3>
-                    <p>
-                        <a href="Grafico_semanal.html" class="Grafico-semanal-link">Gráfico Semanal</a>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
+            // Busca el dato más cercano a 24h atrás
+            let closestFeed = null;
+            let minTimeDiff = Infinity;
 
+            for (const feed of feeds) {
+                if (!feed.field1) continue;
 
-    <div id="grafico" class="tabcontent" style="display:none;">
-        <div id="dateFilter">
-            <form id="dateRangeForm">
-                <label for="startDate">Fecha y hora de inicio:</label>
-                <input type="datetime-local" id="startDate" name="startDate" required>
-                <label for="endDate">Fecha y hora de fin:</label>
-                <input type="datetime-local" id="endDate" name="endDate" required>
-                <button type="submit">Filtrar datos</button>
-            </form>
-        </div>
-        <div id="loadingProgress" class="loading-progress" style="display: none;">
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <p id="progressText">Cargando: 0%</p>
-        </div>
+                const feedDate = new Date(feed.created_at);
+                const timeDiff = Math.abs(feedDate.getTime() - twentyFourHoursAgo.getTime());
 
-        <div id="loading" class="loading" style="display: none;">
-            <div class="spinner-modern"></div>
-            <p class="loading-text">Cargando...</p>
-        </div>
-        <div class="raintotalcontainer">
-            <div id="rainDataContainer" class="data-card">
-                <div class="data-icon">🌧️</div>
-                <div class="data-info">
-                    <h3>Lluvia Acumulada</h3>
-                    <p id="totalRainData">Selecciona las fechas</p>
-                </div>
-            </div>
-        </div>
-        <div id="chartContainerTemperatura" class="chart" style="height: 300px; width: 100%;"></div>
-        <div id="chartContainerLluvia" class="chart" style="height: 300px; width: 100%;"></div>
-        <div id="chartContainerVientoMedio" class="chart" style="height: 300px; width: 100%;"></div>
-        <div id="chartContainerRafaga" class="chart" style="height: 300px; width: 100%;"></div>
-        <div id="chartContainerHumedad" class="chart" style="height: 300px; width: 100%;"></div>
-        <div id="chartContainerDireccionViento" style="height: 370px; width: 100%;"></div>
-    </div>
+                if (timeDiff < minTimeDiff) {
+                    minTimeDiff = timeDiff;
+                    closestFeed = feed;
+                }
+            }
 
+            if (!closestFeed) return null;
 
+            const pastRain = parseFloat(closestFeed.field1) || 0;
+            const currentRainValue = parseFloat(currentRain) || 0;
 
+            // Calcula diferencia (lluvia diaria)
+            const dailyRain = currentRainValue - pastRain;
+            return Math.max(0, dailyRain); // No puede ser negativo
+        };
 
-    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
-    <script src="tabs.js"></script>
-    <script src="charts.js"></script>
-    <script src="data.js"></script>
-    <script src="theme.js"></script>
-    <script type="module" src="./main.js"></script>
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('es-ES', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Europe/Madrid'
+            }).format(date);
+        };
+
+        const formatValue = (value, field) => {
+            const num = parseFloat(value);
+            if (isNaN(num)) return '--';
+
+            switch (field) {
+                case 'temperatura':
+                case 'vientoMedio':
+                case 'rafaga':
+                    return num.toFixed(1);
+                case 'lluviaAcumulada':
+                case 'lluviaDiaria':
+                    return num.toFixed(2);
+                case 'direccionViento':
+                case 'humedad':
+                    return Math.round(num).toString();
+                default:
+                    return num.toString();
+            }
+        };
+
+        const updateUI = (data, feeds = null) => {
+            Object.entries(fieldMap).forEach(([variable, field]) => {
+                const element = document.getElementById(variable);
+                if (element && data[field] !== undefined) {
+                    element.textContent = formatValue(data[field], variable);
+                }
+            });
+
+            // Actualizar lluvia diaria si tenemos datos históricos
+            if (feeds && data.field1) {
+                dailyRainfall = calculateDailyRain(feeds, data.field1);
+                const dailyElement = document.getElementById('lluviaDiaria');
+                if (dailyElement) {
+                    dailyElement.textContent = dailyRainfall !== null ?
+                        formatValue(dailyRainfall, 'lluviaDiaria') : '--';
+                }
+            }
+
+            if (data.created_at) {
+                document.getElementById('lastUpdate').textContent =
+                    `Última actualización: ${formatDate(data.created_at)}`;
+            }
+        };
+
+        const showContent = (contentId) => {
+            ['loading', 'error', 'dashboard'].forEach(id => {
+                document.getElementById(id).style.display = id === contentId ?
+                    (id === 'dashboard' ? 'grid' : 'flex') : 'none';
+            });
+        };
+
+        const fetchWeatherData = async () => {
+            try {
+                // Obtener datos actuales y históricos en paralelo
+                const [currentResponse, feedsResponse] = await Promise.all([
+                    fetch(API_URL),
+                    fetch(FEEDS_API_URL)
+                ]);
+
+                if (!currentResponse.ok) throw new Error(`HTTP ${currentResponse.status}`);
+
+                const currentData = await currentResponse.json();
+                let feedsData = null;
+
+                // Los datos históricos son opcionales
+                if (feedsResponse.ok) {
+                    const feedsJson = await feedsResponse.json();
+                    feedsData = feedsJson.feeds || [];
+                }
+
+                updateUI(currentData, feedsData);
+                showContent('dashboard');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showContent('error');
+
+                // Retry after 15 seconds on error
+                setTimeout(fetchWeatherData, 15000);
+            }
+        };
+
+        // Initialize
+        fetchWeatherData();
+
+        // Refresh every 5 minutes
+        setInterval(fetchWeatherData, 300000);
+    </script>
 </body>
 
 </html>
