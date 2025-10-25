@@ -305,7 +305,7 @@
             const currentRainValue = parseFloat(currentRain) || 0;
 
             // Calcula diferencia (lluvia diaria)
-            const dailyRain = (currentRainValue - pastRain) * 10;
+            const dailyRain = (currentRainValue - pastRain);
             return Math.max(0, dailyRain); // No puede ser negativo
         };
 
