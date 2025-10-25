@@ -305,7 +305,7 @@
             const currentRainValue = parseFloat(currentRain) || 0;
 
             // Calcula diferencia (lluvia diaria)
-            const dailyRain = currentRainValue - pastRain;
+            const dailyRain = (currentRainValue - pastRain) * 10;
             return Math.max(0, dailyRain); // No puede ser negativo
         };
 
@@ -322,24 +322,28 @@
         };
 
         const formatValue = (value, field) => {
-            const num = parseFloat(value);
-            if (isNaN(num)) return '--';
-
-            switch (field) {
-                case 'temperatura':
-                case 'vientoMedio':
-                case 'rafaga':
-                    return num.toFixed(1);
-                case 'lluviaAcumulada':
-                case 'lluviaDiaria':
-                    return num.toFixed(2);
-                case 'direccionViento':
-                case 'humedad':
+                let num = parseFloat(value);
+                if (isNaN(num)) return '--';
+            
+                // Escala correcta para la lluvia (en décimas de mm)
+                if (field === 'lluviaAcumulada' || field === 'lluviaDiaria') {
+                    num = num * 10;
+                    return num.toFixed(1); // mostramos con una cifra decimal, ej. 19.2
+                }
+            
+                switch (field) {
+                    case 'temperatura':
+                    case 'vientoMedio':
+                    case 'rafaga':
+                        return num.toFixed(1);
+                    case 'direccionViento':
+                    case 'humedad':
                     return Math.round(num).toString();
                 default:
                     return num.toString();
             }
         };
+
 
         const updateUI = (data, feeds = null) => {
             Object.entries(fieldMap).forEach(([variable, field]) => {
