@@ -36,15 +36,9 @@ El sistema consta de dos partes:
      - `sainlogic.css` — estilos personalizados  
    - La interfaz web es 100 % estática y puede servirse directamente desde el ESP32 (si dispone de suficiente memoria) o desplegarse en cualquier hosting estático —por ejemplo, GitHub Pages, Grafana o incluso integrar directamente con ThingSpeak— para obtener visualizaciones y análisis más avanzados.
   
-Un ejemplo de web se muestra [aquí](https://alvaro137.github.io/Sainlogic_esp32_wifi/), con datos en tiempo real del clima en Espadaña, Salamanca, y gráficos interactivos filtrables por fecha realizados únicamente con charts.js para visualización rápida, como este:
-<img width="1771" height="369" alt="image" src="https://github.com/user-attachments/assets/e69a65da-aabf-4c33-9742-02d4883170c2" />
+Un ejemplo de web se muestra [aquí](https://alvaro137.github.io/Sainlogic_esp32_wifi/), con datos en tiempo real del clima en Espadaña, Salamanca.
 >  Hay que tener en cuenta que el esp32 se encuentra en este caso en una zona donde la conexión wifi es altamente inestable, lo que causa frecuentes y largas desconexiones
 Incluyo a continuación algunas imágenes de demostración:
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/6a8e3589-fdf8-4fe5-b71d-eb426af59cdd" alt="web_demo_light" width="250"/>
-  <img src="https://github.com/user-attachments/assets/69bbb3e4-4cee-4a69-a2d1-9b6629d5f3ab" alt="web_demo_dark" width="250" style="margin-right: 10px;"/>
-</p>
 ---
 
 ## ⚙️ Instalación y uso
