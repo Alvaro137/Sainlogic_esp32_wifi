@@ -49,35 +49,35 @@ bool check_crc(const uint8_t *msg) {
 }
 
 // Get the wind direction in degrees
-float get_direction(const uint8_t *msg) {
-    float dir = msg[6];
-    if(msg[3] & 0b100) {
-        dir += 256;
-    }
-    return dir;
-}
-
-// Get the temperature in degrees F
-float get_temperature(const uint8_t *msg) {
-    return float((msg[9] & 0b111) * 256 + msg[10]) / 10. - 40.;
-}
-
-// Get average wind speed in m/s
-float get_avr_wind_speed(const uint8_t *msg) {
-    return float(msg[4]) / 10.;
-}
-
-// Get gust wind speed in m/s
-float get_gust_wind_speed(const uint8_t *msg) {
-    return float(msg[5]) / 10.;
-}
-
-// Get rain measurement in mm
-float get_rain(const uint8_t *msg) {
-    return float(msg[7] * 256 + msg[8]) / 10.;
-}
-
-// Get humidity in %
-float get_humidity(const uint8_t *msg) {
-    return msg[11];
-}
+//float get_direction(const uint8_t *msg) {
+//    float dir = msg[6];
+//    if(msg[3] & 0b100) {
+//        dir += 256;
+//    }
+//    return dir;
+//}
+//
+//// Get the temperature in degrees F
+//float get_temperature(const uint8_t *msg) {
+//    return float((msg[9] & 0b111) * 256 + msg[10]) / 10. - 40.;
+//}
+//
+//// Get average wind speed in m/s
+//float get_avr_wind_speed(const uint8_t *msg) {
+//    return float(msg[4]) / 10.;
+//}
+//
+//// Get gust wind speed in m/s
+//float get_gust_wind_speed(const uint8_t *msg) {
+//    return float(msg[5]) / 10.;
+//}
+//
+//// Get rain measurement in mm
+//float get_rain(const uint8_t *msg) {
+//    return float(msg[7] * 256 + msg[8]) / 10.;
+//}
+//
+//// Get humidity in %
+//float get_humidity(const uint8_t *msg) {
+//    return msg[11];
+//}

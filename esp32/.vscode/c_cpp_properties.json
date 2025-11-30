@@ -10,6 +10,8 @@
             "includePath": [
                 "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/include",
                 "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/src",
+                "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
+                "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/.pio/libdeps/esp32dev/WiFiManager",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/FS/src",
@@ -225,7 +227,6 @@
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/ESP32/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Ethernet/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/FFat/src",
-                "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPUpdate/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPUpdateServer/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/I2S/src",
@@ -241,7 +242,6 @@
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/SimpleBLE/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
-                "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 ""
@@ -251,6 +251,8 @@
                 "path": [
                     "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/include",
                     "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/src",
+                    "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
+                    "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "C:/Users/alvar/proyectos/personal/embebidos/Sainlogic_esp32_wifi/esp32/.pio/libdeps/esp32dev/WiFiManager",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/FS/src",
@@ -466,7 +468,6 @@
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/ESP32/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Ethernet/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/FFat/src",
-                    "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPUpdate/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/HTTPUpdateServer/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/I2S/src",
@@ -482,7 +483,6 @@
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/SimpleBLE/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
-                    "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                     "C:/Users/alvar/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     ""
