@@ -14,7 +14,7 @@
 
 #include <Arduino.h>
 
-#define SAMPLE_LEN 10240
+#define SAMPLE_LEN 10240 // Number of bits in the ring buffer
 
 // The digital been to sample in the sample function
 void set_sample_pin(uint8_t pin);

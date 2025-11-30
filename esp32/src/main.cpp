@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <ESP32TimerInterrupt.h>
-#include <WiFiManager.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <esp_task_wdt.h>
@@ -10,129 +10,134 @@
 #include "data_decode.h"
 #include "secrets.h" 
 
+// --- CONFIGURACIÓN ---
 #define PIN_IN1 5
 #define PIN_IN2 4
 #define LED 2
 
+// Configuración de Muestreo (40us para precisión en 433MHz)
 #define SAMPLE_PERIOD_US 40
 #define MIN_SAMPLES 4
 #define MAX_SAMPLES 16
-#define NSKIP 2 
-#define WIFI_RECONNECT_INTERVAL 60000 
-#define WDT_TIMEOUT 120 
-#define MAX_HTTP_ERRORS 5
 
-// --- TIEMPOS ---
-#define RADIO_TIMEOUT 600000        // 10 min -> Reinicio
-#define RADIO_WARNING_TIME 300000   // 5 min -> Enviar Alerta Web
-#define FORCED_REBOOT_MS 86400000   // 24 h -> Mantenimiento
+// --- TIEMPOS DE PROTECCIÓN ---
+#define WDT_TIMEOUT 120             // 2 min: Watchdog de Hardware (Bloqueo CPU)
+#define UPLOAD_TIMEOUT 900000       // 15 min: Watchdog "End-to-End" (Si no sube datos -> Reinicio)
+#define RADIO_WARNING_TIME 300000   // 5 min: Solo para enviar Log de aviso ("Radio Silence")
+#define WIFI_CHECK_INTERVAL 300000   // 5 min: Intervalo para chequear y reconectar WiFi
+#define WIFI_TIMEOUT 4000         // 4 seg: Timeout de conexión WiFi
 
+#define NSKIP 5                     // Enviar 1 de cada NSKIP paquetes
+
+// Objetos
 ESP32Timer ITimer(0);
 BinaryPpmTracker tracker(MIN_SAMPLES, MAX_SAMPLES);
 
-int count_for_nskip = 0;
-unsigned long lastWifiAttempt = 0;
-bool wifiConnected = false;
-
-// Variables Diagnóstico
-int buffer_overflow_count = 0; 
-unsigned long boot_time = 0;
-int consecutive_http_errors = 0;
+// Variables
 unsigned long last_radio_activity = 0; 
-bool warning_sent = false; // Para no spammear la alerta
+unsigned long boot_time = 0;       
+unsigned long last_wifi_check = 0;  
+unsigned long last_successful_upload = 0; // La variable más importante
+bool warning_sent = false;          
 
-#define LOG_ERROR(fmt, ...)   Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) Serial.printf("[ERROR] " fmt "\n", ##__VA_ARGS__)
 
-void connectWiFi() {
-    WiFiManager wifiManager;
-    wifiManager.setConnectTimeout(60);
-    if (wifiManager.autoConnect(WIFI_SSID, WIFI_PASSWORD)) {
-        wifiConnected = true;
-    } else {
-        wifiConnected = false;
-        LOG_ERROR("Fallo WiFi. Reiniciando...");
-        delay(2000);
-        ESP.restart();
+// ================================================================
+// GESTIÓN WIFI (Asíncrona)
+// ================================================================
+void setupWiFi() {
+    WiFi.disconnect(true); 
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.println("WiFi: Conexión iniciada en segundo plano.");
+}
+
+void checkWiFi() {
+    if (WiFi.status() != WL_CONNECTED) {
+        if (millis() - last_wifi_check > WIFI_CHECK_INTERVAL) {
+            last_wifi_check = millis();
+            Serial.printf("WiFi caído (status %d). Reintentando...\n", WiFi.status());
+            WiFi.disconnect();
+            WiFi.reconnect();
+        }
     }
 }
 
-// --- FUNCIÓN NUEVA: ENVIAR ALERTA ---
-void sendAlert(String mensaje) {
-    if (!wifiConnected) return;
-    
+// ================================================================
+// ENVÍO DE LOGS (Diagnóstico)
+// ================================================================
+void sendErrorLog(String mensaje) {
+    if (WiFi.status() != WL_CONNECTED) return;
+
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
-    
-    // Apuntamos al endpoint nuevo /api/log-error
+
     if (http.begin(client, String(SERVER_URL) + "/api/log-error")) {
         http.addHeader("Content-Type", "text/plain");
         http.addHeader("Authorization", String("Bearer ") + String(API_TOKEN_ESP));
-        
-        // Enviamos el mensaje de texto
-        int code = http.POST(mensaje);
-        Serial.printf("Alerta enviada: %s (Code: %d)\n", mensaje.c_str(), code);
+        http.POST(mensaje);
         http.end();
     }
 }
 
-String sendRawData(const uint8_t *msg, size_t len) {
-    if (!wifiConnected) return "WiFi not connected";
+// ================================================================
+// ENVÍO DE DATOS
+// ================================================================
+void sendRawData(const uint8_t *msg, size_t len) {
+    if (WiFi.status() != WL_CONNECTED) return;
 
     WiFiClientSecure client;
-    client.setInsecure(); 
-    HTTPClient http;
+    client.setInsecure();
+    client.setTimeout(WIFI_TIMEOUT); 
     
+    HTTPClient http;
+    http.setConnectTimeout(WIFI_TIMEOUT);
+
     if (!http.begin(client, String(SERVER_URL) + "/api/raw-data")) {
-        consecutive_http_errors++;
-        return "Connect failed";
+        return;
     }
 
     http.addHeader("Content-Type", "application/octet-stream");
     http.addHeader("Authorization", String("Bearer ") + String(API_TOKEN_ESP));
 
-    String rssiVal = String(WiFi.RSSI());
-    String uptimeVal = String((millis() - boot_time) / 1000);
-    String errorVal = String(buffer_overflow_count);
-    String heapVal = String(ESP.getFreeHeap());
-
-    http.addHeader("X-ESP-RSSI", rssiVal);
-    http.addHeader("X-ESP-Uptime", uptimeVal);
-    http.addHeader("X-ESP-Errors", errorVal);
-    http.addHeader("X-ESP-Heap", heapVal);
+    // Telemetría para el backend
+    http.addHeader("X-ESP-RSSI", String(WiFi.RSSI()));
+    http.addHeader("X-ESP-Uptime", String((millis() - boot_time) / 1000));
+    http.addHeader("X-ESP-Heap", String(ESP.getFreeHeap()));
 
     int httpCode = http.POST((uint8_t*)msg, len);
     http.end();
-    
+
     if (httpCode == 200) {
-        buffer_overflow_count = 0;
-        consecutive_http_errors = 0;
-        return "OK";
+        last_successful_upload = millis(); 
+        // Serial.println("Envío OK");
     } else {
-        consecutive_http_errors++;
-        if (consecutive_http_errors >= MAX_HTTP_ERRORS) {
-            LOG_ERROR("Demasiados fallos HTTP (%d). REINICIANDO...", consecutive_http_errors);
-            delay(1000);
-            ESP.restart();
-        }
-        return "Error";
+        Serial.printf("Error HTTP: %d\n", httpCode);
     }
 }
 
+// ================================================================
+// SETUP
+// ================================================================
 void setup() {
     Serial.begin(115200);
-    boot_time = millis(); 
-    last_radio_activity = millis(); 
+    boot_time = millis();
+    last_radio_activity = millis();
     
+    // Al arrancar, damos por hecho que acabamos de "tener éxito" para dar margen de 15 min
+    last_successful_upload = millis(); 
+
     pinMode(PIN_IN1, INPUT);
     pinMode(PIN_IN2, INPUT);
     pinMode(LED, OUTPUT);
     set_sample_pin(PIN_IN2);
 
+    // Watchdog Hardware (Protege contra bloqueos de CPU)
     esp_task_wdt_init(WDT_TIMEOUT, true);
     esp_task_wdt_add(NULL);
 
-    connectWiFi();
+    setupWiFi();
 
     if (!ITimer.attachInterruptInterval(SAMPLE_PERIOD_US, sample_input)) {
         LOG_ERROR("Error Timer");
@@ -140,42 +145,40 @@ void setup() {
     }
 }
 
+// ================================================================
+// LOOP
+// ================================================================
+int count_for_nskip = 0;
+
 void loop() {
     unsigned long now = millis();
+    
+    // 1. Watchdog Hardware (Acariciar al perro)
     esp_task_wdt_reset();
 
-    // --- PROTECCIÓN 1: REINICIO 24H ---
-    if (now - boot_time > FORCED_REBOOT_MS) {
+    // 2. Mantenimiento WiFi
+    checkWiFi();
+
+    // 3. WATCHDOG "END-TO-END" (La protección maestra)
+    // Si en 15 minutos no hemos recibido un "200 OK" del servidor, reiniciamos.
+    // Esto cubre: Fallo Radio, Fallo WiFi, Fallo Router, Fallo SSL, Fallo Servidor.
+    if (now - last_successful_upload > UPLOAD_TIMEOUT) {
+        LOG_ERROR("15 minutos sin éxito. Reiniciando sistema completo...");
+        delay(500);
         ESP.restart();
     }
 
-    // --- PROTECCIÓN 2: RADIO ---
-    unsigned long silence_duration = now - last_radio_activity;
-
-    // A) Aviso a los 5 minutos (Si hay WiFi, te chivas)
-    if (silence_duration > RADIO_WARNING_TIME && !warning_sent) {
-        sendAlert("RADIO_SILENCE_5_MIN_WARNING");
-        warning_sent = true; // Marcamos para no enviarlo en bucle
+    // 4. Aviso Diagnóstico (Opcional, no reinicia)
+    // Si hay WiFi pero no hay radio, avisa al log para que sepas qué pasa.
+    if (now - last_radio_activity > RADIO_WARNING_TIME && !warning_sent) {
+        sendErrorLog("ALERTA: 5 minutos sin señal de radio");
+        warning_sent = true;
     }
 
-    // B) Muerte a los 10 minutos (Reinicio)
-    if (silence_duration > RADIO_TIMEOUT) {
-        LOG_ERROR("10 min sin radio. Reiniciando...");
-        delay(1000);
-        ESP.restart();
-    }
-
-    if (!wifiConnected && (now - lastWifiAttempt >= WIFI_RECONNECT_INTERVAL)) {
-        lastWifiAttempt = now;
-        connectWiFi();
-    }
-
-    if (!wifiConnected) { delay(100); return; }
-
+    // 5. Procesamiento Radio
     size_t buffered_len = num_samples();
 
-    if (buffered_len > SAMPLE_LEN / 2) {
-        buffer_overflow_count++; 
+    if (buffered_len > 128 * 8) { 
         reset_sampler();
         return;
     }
@@ -183,21 +186,25 @@ void loop() {
     for (size_t i = 0; i < buffered_len; i++) {
         tracker.process_sample(get_next_sample());
 
-        if (tracker.cur_rx_len() == MSG_LEN) {
-            
-            // ¡SEÑAL VIVA!
+        if (tracker.cur_rx_len() == MSG_BYTES * 8) { // 128 bits
             last_radio_activity = now; 
-            warning_sent = false; // Reseteamos la alerta para la próxima vez
+            warning_sent = false;
+
+            digitalWrite(LED, HIGH);
 
             if (count_for_nskip == NSKIP) {
-                sendRawData(tracker.get_msg(), MSG_LEN);
+                sendRawData(tracker.get_msg(), MSG_BYTES); 
                 count_for_nskip = 0;
             } else {
                 count_for_nskip++;
             }
+            
+            digitalWrite(LED, LOW);
+            
             reset_sampler();
             tracker.reset();
         }
     }
-    delayMicroseconds(SAMPLE_PERIOD_US * 10);
+    
+    delayMicroseconds(50); 
 }
