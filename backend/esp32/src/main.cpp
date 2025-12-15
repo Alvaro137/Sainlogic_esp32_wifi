@@ -27,7 +27,7 @@
 #define WIFI_CHECK_INTERVAL 300000   // 5 min: Intervalo para chequear y reconectar WiFi
 #define WIFI_TIMEOUT 4000         // 4 seg: Timeout de conexión WiFi
 
-#define NSKIP 5                     // Enviar 1 de cada NSKIP paquetes
+#define NSKIP 2                     // Enviar 1 de cada NSKIP paquetes
 
 // Objetos
 ESP32Timer ITimer(0);

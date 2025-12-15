@@ -1,0 +1,591 @@
+/* Importamos fuentes premium: Inter para texto, JetBrains Mono para datos */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+* {
+
+    margin: 0;
+
+    padding: 0;
+
+    box-sizing: border-box;
+
+    font-family: 'Inter', sans-serif;
+
+}
+
+
+:root {
+
+    --bg-primary: #0a0a0a;
+
+    --bg-secondary: #111111;
+
+    --bg-card: #1a1a1a;
+
+    --border: #2a2a2a;
+
+    --text-primary: #ffffff;
+
+    --text-secondary: #a0a0a0;
+
+    --accent: #0055ff;
+
+    --accent-glow: rgba(0, 85, 255, 0.3);
+
+    --success: #00d4aa;
+
+}
+
+
+body {
+
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+
+    background: var(--bg-primary);
+
+    color: var(--text-primary);
+
+    line-height: 1.6;
+
+    min-height: 100vh;
+
+}
+
+
+.container {
+
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 40px 20px;
+
+}
+
+
+header {
+
+    text-align: center;
+
+    margin-bottom: 60px;
+
+}
+
+
+h1 {
+
+    font-size: 2.8rem;
+
+    font-weight: 300;
+
+    margin-bottom: 24px;
+
+    letter-spacing: -0.02em;
+
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+
+    -webkit-background-clip: text;
+
+    -webkit-text-fill-color: transparent;
+
+    background-clip: text;
+
+}
+
+
+nav {
+
+    display: inline-flex;
+
+    gap: 4px;
+
+    background: var(--bg-secondary);
+
+    padding: 6px;
+
+    border-radius: 10px;
+
+    border: 1px solid var(--border);
+
+}
+
+
+nav a {
+
+    text-decoration: none;
+
+    padding: 10px 20px;
+
+    border-radius: 6px;
+
+    color: var(--text-secondary);
+
+    font-weight: 400;
+
+    font-size: 0.9rem;
+
+    transition: all 0.3s ease;
+
+    letter-spacing: 0.5px;
+
+}
+
+
+nav a:hover {
+
+    color: var(--text-primary);
+
+    background: rgba(255, 255, 255, 0.05);
+
+}
+
+
+nav a.active {
+
+    background: var(--accent);
+
+    color: var(--text-primary);
+
+    box-shadow: 0 0 20px var(--accent-glow);
+
+}
+
+
+.dashboard {
+
+    max-width: 1000px;
+
+    margin: 0 auto;
+
+}
+
+
+.last-update {
+
+    text-align: center;
+
+    color: var(--text-secondary);
+
+    font-size: 0.85rem;
+
+    margin-bottom: 40px;
+
+    letter-spacing: 0.5px;
+
+}
+
+
+#last-update {
+
+    color: var(--text-primary);
+
+    font-weight: 500;
+
+}
+
+
+.weather-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+
+    gap: 24px;
+
+    margin-bottom: 40px;
+
+}
+
+
+.weather-card {
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 16px;
+
+    padding: 32px 28px;
+
+    transition: all 0.3s ease;
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+
+.weather-card::before {
+
+    content: '';
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    right: 0;
+
+    height: 1px;
+
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+
+    opacity: 0;
+
+    transition: opacity 0.3s ease;
+
+}
+
+
+.weather-card:hover {
+
+    border-color: rgba(255, 255, 255, 0.1);
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+}
+
+
+.weather-card:hover::before {
+
+    opacity: 1;
+
+}
+
+
+.card-content {
+
+    text-align: center;
+
+}
+
+
+.card-value {
+
+    font-size: 2.4rem;
+
+    font-weight: 300;
+
+    font-family: 'JetBrains Mono', monospace;
+
+    color: var(--text-primary);
+
+    margin-bottom: 8px;
+
+    letter-spacing: -0.02em;
+
+    min-height: 2.8rem;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+
+.card-label {
+
+    font-size: 0.8rem;
+
+    color: var(--text-secondary);
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
+
+    font-weight: 500;
+
+}
+
+
+.status-info {
+
+    text-align: center;
+
+}
+
+
+.update-indicator {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 10px 20px;
+
+    background: var(--bg-secondary);
+
+    border: 1px solid var(--border);
+
+    border-radius: 12px;
+
+    font-size: 0.8rem;
+
+    color: var(--text-secondary);
+
+    letter-spacing: 0.5px;
+
+}
+
+
+.dot {
+
+    width: 6px;
+
+    height: 6px;
+
+    background: var(--success);
+
+    border-radius: 50%;
+
+    animation: pulse 2s infinite;
+
+}
+
+
+@keyframes pulse {
+
+
+    0%,
+
+    100% {
+
+        opacity: 1;
+
+        transform: scale(1);
+
+    }
+
+
+    50% {
+
+        opacity: 0.7;
+
+        transform: scale(1.2);
+
+    }
+
+}
+
+
+.card-value:empty::before {
+
+    content: '--';
+
+    color: var(--text-secondary);
+
+}
+
+
+@media (max-width: 768px) {
+
+    .container {
+
+        padding: 20px 16px;
+
+    }
+
+
+    h1 {
+
+        font-size: 2.2rem;
+
+    }
+
+
+    .weather-grid {
+
+        grid-template-columns: 1fr;
+
+        gap: 16px;
+
+    }
+
+
+    .weather-card {
+
+        padding: 24px 20px;
+
+    }
+
+
+    .card-value {
+
+        font-size: 2rem;
+
+    }
+
+
+    nav {
+
+        flex-direction: column;
+
+        width: 100%;
+
+        max-width: 200px;
+
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    h1 {
+
+        font-size: 1.8rem;
+
+    }
+
+
+    .weather-card {
+
+        padding: 20px 16px;
+
+    }
+
+
+    .card-value {
+
+        font-size: 1.8rem;
+
+    }
+
+}
+
+:root {
+    /* ... [Variables anteriores] ... */
+    --temp-hot: #ff4500;
+    --temp-cold: #00bfff;
+    --wind-color: var(--success);
+}
+
+/* --- Nuevos Estilos para Iconos --- */
+.card-icon {
+    font-size: 2.2rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+}
+
+.weather-card.primary-card .card-icon {
+    color: var(--text-primary);
+}
+
+/* Estilos de la Tarjeta de Dirección de Viento */
+.wind-direction-card .card-value {
+    font-size: 1.8rem;
+    /* Un poco más pequeña para el texto de dirección */
+    font-weight: 500;
+}
+
+.compass-container {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px;
+    border: 3px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.wind-arrow {
+    position: absolute;
+    font-size: 1.5rem;
+    color: var(--wind-color);
+    transform: rotate(0deg);
+    /* Se controla con JavaScript */
+    transition: transform 0.5s ease-out;
+    filter: drop-shadow(0 0 5px rgba(0, 212, 170, 0.5));
+}
+
+.wind-arrow::before {
+    /* El truco para que la flecha apunte correctamente (la flecha de FontAwesome apunta hacia arriba por defecto) */
+    transform: rotate(45deg);
+}
+
+/* Colores dinámicos para la temperatura */
+.temp-cold {
+    color: var(--temp-cold);
+}
+
+.temp-mild {
+    color: var(--success);
+}
+
+.temp-hot {
+    color: var(--temp-hot);
+}
+
+/* Ajuste en pantallas pequeñas */
+@media (max-width: 768px) {
+
+    /* ... [Media query anterior] ... */
+    .card-icon {
+        font-size: 1.8rem;
+    }
+
+    .compass-container {
+        width: 50px;
+        height: 50px;
+    }
+
+    .wind-arrow {
+        font-size: 1.2rem;
+    }
+}
+
+/* Añadir al final de frontend/static/styles.css */
+
+.analysis-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    /* Para centrar verticalmente */
+}
+
+.export-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+}
+
+.export-container p {
+    color: var(--text-secondary);
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.download-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    background: var(--accent);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+.download-button:hover {
+    background: #0044cc;
+    transform: translateY(-2px);
+}

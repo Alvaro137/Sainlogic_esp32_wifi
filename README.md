@@ -1,69 +1,88 @@
-# 🌦️ Sainlogic_esp32_wifi
+# 🌦️ Sainlogic_esp32_wifi - Estación Meteorológica con Conectividad WiFi
 
-Este proyecto añade conectividad WiFi a la estación meteorológica Sainlogic usando un ESP32, de modo que puedas **capturar** y **visualizar** tus datos de temperatura, humedad, presión, viento y lluvia en tiempo real desde una web estática y responsiva, accesible desde cualquier navegador. 
+Este proyecto permite añadir conectividad WiFi a la estación meteorológica Sainlogic FT0835 (o similar) utilizando un ESP32. Esto posibilita la **captura**, **decodificado**, **almacenamiento** y **visualización** de datos de temperatura, humedad, viento y lluvia en tiempo real a través de una [aplicación web](https://varo137.ddns.net/).
 
 ---
 ## 📋 Prerrequisitos
 
-- **Hardware**  
-  - ESP32 (p. ej. ESP32‑Devkit común)  
-  - Estación meteorológica Sainlogic FT0835 sin WiFi como [esta](https://www.amazon.es/Meteorol%C3%B3gica-Inal%C3%A1mbrica-Exteriores-Temperatura-Despertador/dp/B08P5VZKKJ/ref=sr_1_8?crid=3PWAMGKN7AA16&keywords=estacion%2Bmeteorologica%2Bpluviometro&qid=1695751250&refinements=p_36%3A2493684031&rnid=2493681031&s=lawn-garden&sprefix=estacion%2Bmeteorologica%2B%2Clawngarden%2C337&sr=1-8&ufe=app_do%3Aamzn1.fos.5e544547-1f8e-4072-8c08-ed563e39fc7d&th=1) o similar
-  - Soldador y cables para interconectar  
-- **Conexión física**  
-  Soldar el ESP32 al receptor de la estación según la guía de [Robopenguins](https://www.robopenguins.com/weather-station/).
-  Para un ejemplo de firmware  adaptado para el ESP8266 (no apto para ESP32) que publica por MQTT a Weather Underground, revisa también [su github](https://github.com/axlan/sainlogic-sdr), que ha inspirado este proyecto.
-- **Software**  
-  - [PlatformIO](https://platformio.org/) (o ESP‑IDF)  
-  - Git  
+- **Hardware**
+    - ESP32 (p. ej. ESP32‑Devkit común)
+    - Estación meteorológica Sainlogic FT0835 sin WiFi.
+    - **Advertencia:** Se requiere soldador, cables y conocimientos básicos de electrónica para interconectar los dispositivos.
+    - Conviene añadir condensadores entre alimentación y tierra para evitar resets por picos de voltaje, ya que enviar datos por HTTP supone un pico de demanda por parte del ESP32.
 
-## 📖 Descripción general
+- **Conexión física**
+  Soldar el ESP32 al receptor de la estación según la guía de [Robopenguins](https://www.robopenguins.com/weather-station/).
 
-El sistema consta de dos partes:
+- **Software**
+    - [PlatformIO](https://platformio.org/) (o ESP‑IDF)
+    - Git
+    - Python 3.x (para el servidor API)
+    - Un servidor Linux para hostear la app web.
 
-1. **Firmware para ESP32**  
-   - Se conecta a la estación Sainlogic y lee los sensores (temp., humedad, presión, viento, lluvia…).  
-   - Decodifica y procesa los datos en el microcontrolador.  
-   - El ESP32 se conecta a tu red WiFi y ofrece los datos meteorológicos en tiempo real a través de una API/servidor HTTP ligero. Por defecto envío la información a ThingSpeak vía HTTP, aunque también puedes configurarlo para trabajar con MQTT u otras plataformas de tu elección.
-   - Configuración de red en `secrets.h` (no subas tus credenciales al repositorio, para ello confirma que tengas este archivo en el .gitignore).  
-   - Código principal en `esp32/src/`.
+## 📖 Descripción general y Arquitectura
 
-2. **Interfaz web estática**  
-   - Carpeta `docs/` con HTML, CSS y JavaScript para mostrar gráficos interactivos y tablas.  
-   - Archivos principales:
-     - `index.html` — punto de inicio  
-     - `main.js` — conexión con la API del ESP32  
-     - `charts.js` — generación de gráficos meteorológicos  
-     - `sainlogic.css` — estilos personalizados  
-   - La interfaz web es 100 % estática y puede servirse directamente desde el ESP32 (si dispone de suficiente memoria) o desplegarse en cualquier hosting estático —por ejemplo, GitHub Pages, Grafana o incluso integrar directamente con ThingSpeak— para obtener visualizaciones y análisis más avanzados.
-  
-Un ejemplo de web se muestra [aquí](https://alvaro137.github.io/Sainlogic_esp32_wifi/), con datos en tiempo real del clima en Espadaña, Salamanca.
->  Hay que tener en cuenta que el esp32 se encuentra en este caso en una zona donde la conexión wifi es altamente inestable, lo que causa frecuentes y largas desconexiones
-Incluyo a continuación algunas imágenes de demostración:
+El sistema se divide en tres componentes principales:
+
+1. **Firmware para ESP32 (Backend Lógica)**
+  - Muestrea el receptor Sainlogic, obtiene los binarios crudos.
+  - Envía estos binarios vía HTTP POST a la API de destino.
+  - *Opcional:* Se puede configurar para usar MQTT o publicar en servicios como Thingspeak.
+
+2. **API (Backend Recepción, decodificación y Almacenamiento)**
+  - Aplicación basada en **Python y FastAPI** que recibe los datos binarios del ESP32, valida el token de acceso, los decodifica y los almacena en una **base de datos SQLite** (ligera, ideal para SBCs como la Orange Pi).
+  - El protocolo de de los datos se explica [aquí](https://github.com/merbanan/rtl_433/blob/master/src/devices/cotech_36_7959.c). Este modelo de estación no dispone de sensor de UV ni intensidad luminosa, por lo que siempre manda FF FB FB. Además, algunos datos como la presión o temperatura interior se toman con sensores ubicados en la pantalla de visualización de la estación, no en el módulo externo.
+
+3. **Frontend (Visualización)**
+  - **Vanilla JS**. Sirve los datos procesados desde la API, maneja la actualización en tiempo real y permite la exportación histórica.
+
+Un ejemplo de web se muestra [aquí](https://varo137.ddns.net/), con datos en tiempo real.
+*(Nota: El ESP32 puede sufrir desconexiones temporales por tener un WiFi inestable).*
+
 ---
 
-## ⚙️ Instalación y uso
+## ⚙️ Instalación y Despliegue
 
-### 1. Preparar el ESP32
+### 1. Preparar el ESP32 (Captura de Datos)
 
 ```bash
 # Clona el repositorio
-git clone https://github.com/Alvaro137/Sainlogic_esp32_wifi.git
-cd Sainlogic_esp32_wifi/esp32
+git clone [https://github.com/Alvaro137/Sainlogic_esp32_wifi.git](https://github.com/Alvaro137/Sainlogic_esp32_wifi.git)
+cd Sainlogic_esp32_wifi/backend/esp32
 
 # Crea tu archivo de credenciales
-cp include/secrets_example.h include/secrets.h
-# — Edita secrets.h con tu SSID y contraseña WiFi (WIFI_SSID, WIFI_PASS), y opcionalmente tus credenciales de Thingspeak (TS_CHANNEL_ID y TS_WRITE_APIKEY).
+cp src/secrets_example.h src/secrets.h
+# --- Edita secrets.h con tu SSID, contraseña WiFi, URL de la API (ej: [https://tudominio.com/api/raw-data](https://tudominio.com/api/raw-data)) y access token.
 
 # Compila y flashea con PlatformIO
 pio run --target upload
 ```
-### 2. Desplegar la web
+
+### 2. Configurar la API (Recepción y Almacenamiento)
+
+La API está desarrollada en **Python/FastAPI** y utiliza **SQLite** como base de datos. SQLite es ideal para este despliegue por ser ligero (un solo archivo), no requerir un proceso de servidor separado y minimizar el desgaste de escritura en la SD de la Orange Pi.
+
+Es recomendable aislar las dependencias en un entorno virtual:
 
 ```bash
-cd ../docs
-# - Abre index.html localmente
-# - O despliega en GitHub Pages (Settings > Pages > Carpeta /docs)
-```
+# Navega a la carpeta de la API
+cd Sainlogic_esp32_wifi/backend/app
 
-## Ante desconexiones o problemas inesperados
-Prueba a resetear el esp32 usando el botón EN.
+# Crea e inicializa el entorno virtual (sainlogic_venv)
+python3 -m venv sainlogic_venv
+source sainlogic_venv/bin/activate
+
+# Instala las dependencias (FastAPI, Uvicorn, etc.)
+pip install -r requirements.txt
+
+# Crea tu archivo de credenciales a partir de la plantilla
+cp example.env secrets.env
+nano secrets.env
+```
+*Importante*: Recuerda añadir el mismo access token en secrets.env del servidor y en secrets.h del firmware del ESP32, y no subir estos archivos.
+
+### 3. Despliegue en Producción con systemd
+Para asegurar que la API funcione 24/7 y arranque automáticamente con el sistema, utilizamos un servicio de systemd.
+
+### 4. Configuración del Servidor Web (Caddy)
+Utilizamos Caddy como Proxy Inverso. Caddy gestiona automáticamente los certificados SSL (HTTPS) y redirige el tráfico seguro de internet hacia nuestra API interna.

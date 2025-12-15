@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exportar Datos - Meteo Lite</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Exportar Datos Históricos</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/analisis" class="active">Análisis</a>
+            </nav>
+        </header>
+
+        <main class="analysis-view">
+            <div class="export-container">
+                <p>Haz clic en el botón para descargar el archivo CSV con todos los registros de la estación
+                    meteorológica.</p>
+
+                <a id="download-btn" href="/api/descargar-csv" class="download-button">
+                    <i class="fa-solid fa-download"></i>
+                    Descargar CSV Completo
+                </a>
+
+
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

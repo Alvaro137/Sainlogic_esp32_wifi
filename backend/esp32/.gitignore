@@ -1,0 +1,12 @@
+.pio
+.vscode/
+include/
+lib/
+src/tests/
+test/
+
+secrets.h
+*.bin
+*.elf
+*.txt
+src/*.txt
