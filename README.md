@@ -12,7 +12,7 @@ Este proyecto permite añadir conectividad WiFi a la estación meteorológica Sa
     - Conviene añadir condensadores entre alimentación y tierra para evitar resets por picos de voltaje, ya que enviar datos por HTTP supone un pico de demanda por parte del ESP32.
 
 - **Conexión física**
-  Soldar el ESP32 al receptor de la estación según la guía de [Robopenguins](https://www.robopenguins.com/weather-station/).
+    - Soldar el ESP32 al receptor de la estación según la guía de [Robopenguins](https://www.robopenguins.com/weather-station/).
 
 - **Software**
     - [PlatformIO](https://platformio.org/) (o ESP‑IDF)
