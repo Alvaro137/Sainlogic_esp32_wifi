@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8000:8000
+      - "8000:8000"
     env_file:
-      - fileName
+      - backend/app/secrets.env
+    volumes:
+      - ./backend/data:/app/backend/data
+    restart: unless-stopped
