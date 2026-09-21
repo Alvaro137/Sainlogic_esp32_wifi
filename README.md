@@ -24,7 +24,7 @@ Puente WiFi y servidor de telemetría para estaciones meteorológicas Sainlogic 
 
 El sistema consta de tres componentes desacoplados:
 
-1. **Firmware ESP32 (`backend/esp32/`):** Lee el flujo binario del demodulador RF de la estación, extrae y valida el paquete (preámbulo, tipo de mensaje, carga útil y checksum) y envía la trama codificada mediante HTTP POST con autenticación por token Bearer.
+1. **Firmware ESP32 (`firmware/`):** Lee el flujo binario del demodulador RF de la estación, extrae y valida el paquete (preámbulo, tipo de mensaje, carga útil y checksum) y envía la trama codificada mediante HTTP POST con autenticación por token Bearer.
 2. **API Backend (`backend/app/`):** Servicio FastAPI asíncrono que ingesta las lecturas, las almacena en SQLite con journal en modo WAL e índice temporal, y expone endpoints de consulta reciente y descarga de históricos.
 3. **Frontend (`frontend/`):** Interfaz web ligera en Vanilla JS y CSS sin dependencias de compilación, adaptada para navegadores de escritorio y móviles.
 
@@ -71,7 +71,7 @@ La estación exterior transmite ráfagas ASK/OOK moduladas en 433.92 MHz con un 
 Compilación y carga mediante [PlatformIO](https://platformio.org/):
 
 ```bash
-cd backend/esp32
+cd firmware
 
 # Copiar plantilla de configuración
 cp src/secrets_example.h src/secrets.h
