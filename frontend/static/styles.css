@@ -1,591 +1,558 @@
-/* Importamos fuentes premium: Inter para texto, JetBrains Mono para datos */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+/* ============================================================
+   SISTEMA DE DISEÑO — ESTACIÓN METEOROLÓGICA ESPADAÑA
+   Coherencia y armonía visual con Ganaderos Campo PWA
+   ============================================================ */
+
+:root {
+  /* Paleta Corporativa Ganaderos */
+  --brand-primary: #1e3a2b;
+  --brand-primary-hover: #162c20;
+  --accent: #2d6a4f;
+  --accent-light: rgba(45, 106, 79, 0.1);
+
+  /* Fondos y Superficies */
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f1f5f9;
+  --bg-hover: #f1f5f9;
+
+  /* Bordes y Sombras */
+  --border-color: #e2e8f0;
+  --border-color-subtle: #f1f5f9;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+
+  /* Tipografía */
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+
+  /* Estados Dinámicos del Clima */
+  --temp-hot: #ea580c;
+  --temp-mild: #16a34a;
+  --temp-cold: #0284c7;
+  --wind-color: #2d6a4f;
+}
 
 * {
-
-    margin: 0;
-
-    padding: 0;
-
-    box-sizing: border-box;
-
-    font-family: 'Inter', sans-serif;
-
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-
-
-:root {
-
-    --bg-primary: #0a0a0a;
-
-    --bg-secondary: #111111;
-
-    --bg-card: #1a1a1a;
-
-    --border: #2a2a2a;
-
-    --text-primary: #ffffff;
-
-    --text-secondary: #a0a0a0;
-
-    --accent: #0055ff;
-
-    --accent-glow: rgba(0, 85, 255, 0.3);
-
-    --success: #00d4aa;
-
-}
-
 
 body {
-
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-
-    background: var(--bg-primary);
-
-    color: var(--text-primary);
-
-    line-height: 1.6;
-
-    min-height: 100vh;
-
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
 }
 
+/* ============================================================
+   CABECERA PRINCIPAL (ESTILO GANADEROS CAMPO)
+   ============================================================ */
+.app-header {
+  background: var(--brand-primary);
+  color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  padding-top: env(safe-area-inset-top, 0px);
+}
 
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 14px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.brand-text h1 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.brand-sub {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Pestañas de navegación */
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 3px;
+  border-radius: 8px;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-tab.active {
+  background: #ffffff;
+  color: var(--brand-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.nav-tab i {
+  font-size: 0.82rem;
+}
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
 .container {
-
-    max-width: 1200px;
-
-    margin: 0 auto;
-
-    padding: 40px 20px;
-
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  width: 100%;
 }
 
-
-header {
-
-    text-align: center;
-
-    margin-bottom: 60px;
-
+.main-content {
+  flex: 1;
 }
 
-
-h1 {
-
-    font-size: 2.8rem;
-
-    font-weight: 300;
-
-    margin-bottom: 24px;
-
-    letter-spacing: -0.02em;
-
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-
-    -webkit-background-clip: text;
-
-    -webkit-text-fill-color: transparent;
-
-    background-clip: text;
-
+/* Barra de última actualización */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-
-nav {
-
-    display: inline-flex;
-
-    gap: 4px;
-
-    background: var(--bg-secondary);
-
-    padding: 6px;
-
-    border-radius: 10px;
-
-    border: 1px solid var(--border);
-
+.last-update-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
 }
 
-
-nav a {
-
-    text-decoration: none;
-
-    padding: 10px 20px;
-
-    border-radius: 6px;
-
-    color: var(--text-secondary);
-
-    font-weight: 400;
-
-    font-size: 0.9rem;
-
-    transition: all 0.3s ease;
-
-    letter-spacing: 0.5px;
-
+.last-update-wrapper strong {
+  color: var(--text-main);
+  font-weight: 600;
 }
 
-
-nav a:hover {
-
-    color: var(--text-primary);
-
-    background: rgba(255, 255, 255, 0.05);
-
+.pulse-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-
-nav a.active {
-
-    background: var(--accent);
-
-    color: var(--text-primary);
-
-    box-shadow: 0 0 20px var(--accent-glow);
-
-}
-
-
-.dashboard {
-
-    max-width: 1000px;
-
-    margin: 0 auto;
-
-}
-
-
-.last-update {
-
-    text-align: center;
-
-    color: var(--text-secondary);
-
-    font-size: 0.85rem;
-
-    margin-bottom: 40px;
-
-    letter-spacing: 0.5px;
-
-}
-
-
-#last-update {
-
-    color: var(--text-primary);
-
-    font-weight: 500;
-
-}
-
-
-.weather-grid {
-
-    display: grid;
-
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-
-    gap: 24px;
-
-    margin-bottom: 40px;
-
-}
-
-
-.weather-card {
-
-    background: var(--bg-card);
-
-    border: 1px solid var(--border);
-
-    border-radius: 16px;
-
-    padding: 32px 28px;
-
-    transition: all 0.3s ease;
-
-    position: relative;
-
-    overflow: hidden;
-
-}
-
-
-.weather-card::before {
-
-    content: '';
-
-    position: absolute;
-
-    top: 0;
-
-    left: 0;
-
-    right: 0;
-
-    height: 1px;
-
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-
-    opacity: 0;
-
-    transition: opacity 0.3s ease;
-
-}
-
-
-.weather-card:hover {
-
-    border-color: rgba(255, 255, 255, 0.1);
-
-    transform: translateY(-2px);
-
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-}
-
-
-.weather-card:hover::before {
-
-    opacity: 1;
-
-}
-
-
-.card-content {
-
-    text-align: center;
-
-}
-
-
-.card-value {
-
-    font-size: 2.4rem;
-
-    font-weight: 300;
-
-    font-family: 'JetBrains Mono', monospace;
-
-    color: var(--text-primary);
-
-    margin-bottom: 8px;
-
-    letter-spacing: -0.02em;
-
-    min-height: 2.8rem;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-}
-
-
-.card-label {
-
-    font-size: 0.8rem;
-
-    color: var(--text-secondary);
-
-    text-transform: uppercase;
-
-    letter-spacing: 1px;
-
-    font-weight: 500;
-
-}
-
-
-.status-info {
-
-    text-align: center;
-
-}
-
-
-.update-indicator {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 10px 20px;
-
-    background: var(--bg-secondary);
-
-    border: 1px solid var(--border);
-
-    border-radius: 12px;
-
-    font-size: 0.8rem;
-
-    color: var(--text-secondary);
-
-    letter-spacing: 0.5px;
-
-}
-
 
 .dot {
-
-    width: 6px;
-
-    height: 6px;
-
-    background: var(--success);
-
-    border-radius: 50%;
-
-    animation: pulse 2s infinite;
-
+  width: 8px;
+  height: 8px;
+  background: var(--temp-mild);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
 }
-
 
 @keyframes pulse {
-
-
-    0%,
-
-    100% {
-
-        opacity: 1;
-
-        transform: scale(1);
-
-    }
-
-
-    50% {
-
-        opacity: 0.7;
-
-        transform: scale(1.2);
-
-    }
-
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.3);
+  }
 }
 
+/* ============================================================
+   REJILLA METEOROLÓGICA (WEATHER GRID)
+   ============================================================ */
+.weather-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.weather-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.weather-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.card-icon {
+  font-size: 1.35rem;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.card-body {
+  display: flex;
+  align-items: baseline;
+}
+
+.card-value {
+  font-size: 2.3rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.03em;
+  color: var(--text-main);
+  line-height: 1.1;
+}
 
 .card-value:empty::before {
-
-    content: '--';
-
-    color: var(--text-secondary);
-
+  content: '--';
+  color: var(--text-dim);
 }
 
-
-@media (max-width: 768px) {
-
-    .container {
-
-        padding: 20px 16px;
-
-    }
-
-
-    h1 {
-
-        font-size: 2.2rem;
-
-    }
-
-
-    .weather-grid {
-
-        grid-template-columns: 1fr;
-
-        gap: 16px;
-
-    }
-
-
-    .weather-card {
-
-        padding: 24px 20px;
-
-    }
-
-
-    .card-value {
-
-        font-size: 2rem;
-
-    }
-
-
-    nav {
-
-        flex-direction: column;
-
-        width: 100%;
-
-        max-width: 200px;
-
-    }
-
-}
-
-
-@media (max-width: 480px) {
-
-    h1 {
-
-        font-size: 1.8rem;
-
-    }
-
-
-    .weather-card {
-
-        padding: 20px 16px;
-
-    }
-
-
-    .card-value {
-
-        font-size: 1.8rem;
-
-    }
-
-}
-
-:root {
-    /* ... [Variables anteriores] ... */
-    --temp-hot: #ff4500;
-    --temp-cold: #00bfff;
-    --wind-color: var(--success);
-}
-
-/* --- Nuevos Estilos para Iconos --- */
-.card-icon {
-    font-size: 2.2rem;
-    color: var(--accent);
-    margin-bottom: 15px;
-}
-
-.weather-card.primary-card .card-icon {
-    color: var(--text-primary);
-}
-
-/* Estilos de la Tarjeta de Dirección de Viento */
-.wind-direction-card .card-value {
-    font-size: 1.8rem;
-    /* Un poco más pequeña para el texto de dirección */
-    font-weight: 500;
+/* Tarjeta de Dirección de Viento */
+.wind-direction-card .wind-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .compass-container {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 15px;
-    border: 3px solid var(--border);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--border-color);
+  background: var(--bg-surface-subtle);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .wind-arrow {
-    position: absolute;
-    font-size: 1.5rem;
-    color: var(--wind-color);
-    transform: rotate(0deg);
-    /* Se controla con JavaScript */
-    transition: transform 0.5s ease-out;
-    filter: drop-shadow(0 0 5px rgba(0, 212, 170, 0.5));
+  position: absolute;
+  font-size: 1.35rem;
+  color: var(--wind-color);
+  transform: rotate(0deg);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wind-arrow::before {
-    /* El truco para que la flecha apunte correctamente (la flecha de FontAwesome apunta hacia arriba por defecto) */
-    transform: rotate(45deg);
+  display: block;
+  transform: rotate(45deg);
 }
 
-/* Colores dinámicos para la temperatura */
+/* Colores Dinámicos de Temperatura */
 .temp-cold {
-    color: var(--temp-cold);
+  color: var(--temp-cold) !important;
 }
 
 .temp-mild {
-    color: var(--success);
+  color: var(--temp-mild) !important;
 }
 
 .temp-hot {
-    color: var(--temp-hot);
+  color: var(--temp-hot) !important;
 }
 
-/* Ajuste en pantallas pequeñas */
-@media (max-width: 768px) {
-
-    /* ... [Media query anterior] ... */
-    .card-icon {
-        font-size: 1.8rem;
-    }
-
-    .compass-container {
-        width: 50px;
-        height: 50px;
-    }
-
-    .wind-arrow {
-        font-size: 1.2rem;
-    }
+/* ============================================================
+   ESTADO DEL SISTEMA (WIFI Y UPTIME)
+   ============================================================ */
+.system-status-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: var(--shadow-sm);
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
-/* Añadir al final de frontend/static/styles.css */
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+.status-item i {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.status-item strong {
+  color: var(--text-main);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.status-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+}
+
+/* ============================================================
+   VISTA DE ANÁLISIS / DESCARGA HISTÓRICA
+   ============================================================ */
 .analysis-view {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px;
-    /* Para centrar verticalmente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 440px;
 }
 
-.export-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 40px;
-    text-align: center;
-    max-width: 500px;
+.export-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 44px 36px;
+  max-width: 520px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
 }
 
-.export-container p {
-    color: var(--text-secondary);
-    margin-bottom: 30px;
-    font-size: 1.1rem;
+.export-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
 }
 
-.download-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 25px;
-    background: var(--accent);
-    color: var(--text-primary);
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px var(--accent-glow);
+.export-card h2 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
-.download-button:hover {
-    background: #0044cc;
-    transform: translateY(-2px);
+.export-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 26px;
+  border-radius: var(--radius-md);
+  background: var(--brand-primary);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-download:hover {
+  background: var(--brand-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ============================================================
+   RESPONSIVE (MÓVILES Y PANTALLAS PEQUEÑAS)
+   ============================================================ */
+@media (max-width: 768px) {
+  .header-container {
+    padding: 8px 14px;
+    height: 54px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .nav-tab span {
+    display: none;
+  }
+
+  .nav-tab {
+    padding: 0 8px;
+    height: 26px;
+  }
+
+  .weather-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .system-status-card {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .status-divider {
+    display: none;
+  }
+
+  .export-card {
+    padding: 28px 20px;
+    margin: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 6px 12px;
+  }
+
+  .brand-text h1 {
+    font-size: 0.95rem;
+    max-width: 180px;
+  }
+}
+
+@media (min-width: 769px) {
+  .header-container {
+    padding: 10px 24px;
+    height: 60px;
+    gap: 16px;
+  }
+
+  .brand-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.25rem;
+  }
+
+  .brand-text h1 {
+    font-size: 1.15rem;
+  }
+
+  .brand-sub {
+    font-size: 0.78rem;
+  }
+
+  .desktop-nav {
+    height: 36px;
+    padding: 3px 4px;
+    gap: 4px;
+  }
+
+  .nav-tab {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 0.82rem;
+  }
 }
