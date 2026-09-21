@@ -1,6 +1,11 @@
-const POLL_INTERVAL = 5000;
+/**
+ * Dashboard Meteorológico — El tiempo en Espadaña
+ * Comunicación periódica y renderizado reactivo del sensor Sainlogic.
+ */
 
-// id: ID del HTML, unit: sufijo, transform: función opcional para convertir datos
+const POLL_INTERVAL_MS = 5000;
+
+// Configuración de sensores: mapeo de claves de API a elementos del DOM y unidades
 const SENSOR_CONFIG = {
     temperatura: { id: 'temperatura', unit: '°C' },
     humedad: { id: 'humedad', unit: '%' },
@@ -12,12 +17,12 @@ const SENSOR_CONFIG = {
 
 class WeatherDashboard {
     constructor() {
+        this.dom = {};
         this.cacheDOM();
         this.init();
     }
 
     cacheDOM() {
-        // Elementos estructurales fijos
         this.dom = {
             lastUpdate: document.getElementById('last-update'),
             wifi: document.getElementById('wifi-signal'),
@@ -28,10 +33,8 @@ class WeatherDashboard {
             fields: {}
         };
 
-        // Generación dinámica del caché basada en la config (DRY)
-        // Para no hacer getElementById() para cada sensor
-        for (const key in SENSOR_CONFIG) {
-            const config = SENSOR_CONFIG[key];
+        // Cache dinámico de campos
+        for (const [key, config] of Object.entries(SENSOR_CONFIG)) {
             const el = document.getElementById(config.id);
             if (el) this.dom.fields[key] = el;
         }
@@ -59,91 +62,113 @@ class WeatherDashboard {
             console.error("Connection Error:", e);
             this.showError();
         } finally {
-            setTimeout(() => this.fetchData(), POLL_INTERVAL);
+            setTimeout(() => this.fetchData(), POLL_INTERVAL_MS);
         }
     }
 
     updateUI(data) {
         this.updateSensorFields(data);
-
         this.renderTimestamp(data.timestamp);
         this.renderSystemHealth(data);
         this.updateWindDirection(data.direccion);
-        this.updateTempIcon(data.temperatura);
+        this.updateTemperatureColor(data.temperatura);
     }
 
     updateSensorFields(data) {
         for (const [key, config] of Object.entries(SENSOR_CONFIG)) {
             const element = this.dom.fields[key];
-            let value = data[key];
-
             if (!element) continue;
 
+            let value = data[key];
+
             if (value === null || value === undefined) {
-                element.textContent = "--" + config.unit;
+                element.textContent = `--${config.unit}`;
                 continue;
             }
 
-            // Aplicamos transformación si existe (ej. m/s -> km/h)
-            if (config.transform) {
+            if (config.transform && typeof value === 'number') {
                 value = config.transform(value);
             }
 
-            element.textContent = value + config.unit;
+            element.textContent = `${value}${config.unit}`;
         }
     }
 
     renderTimestamp(isoDate) {
-        if (!this.dom.lastUpdate) return;
+        if (!this.dom.lastUpdate || !isoDate) return;
 
-        const dateStr = isoDate.endsWith('Z') ? isoDate : isoDate + 'Z';
-        const date = new Date(dateStr);
+        let str = String(isoDate).trim();
+
+        // Si termina en +00:00Z (formato malformado previo), arreglarlo
+        if (str.includes('+00:00')) {
+            str = str.replace('+00:00Z', 'Z').replace('+00:00', 'Z');
+        } else if (!str.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(str)) {
+            // Timestamp ingenuo UTC de la DB
+            str += 'Z';
+        }
+
+        let date = new Date(str);
+        if (isNaN(date.getTime())) {
+            date = new Date(str.replace(' ', 'T'));
+        }
+
+        if (isNaN(date.getTime())) {
+            this.dom.lastUpdate.textContent = "--";
+            return;
+        }
+
         const now = new Date();
-        const diff = Math.floor((now - date) / 1000);
+        const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-        const timeText = this.getRelativeTime(diff, date, now);
-
-        // Lógica de estado de conexión
-        const isDisconnected = diff > (3600); // 1 hora
-        this.dom.lastUpdate.innerHTML = timeText;
+        this.dom.lastUpdate.textContent = this.getRelativeTime(diffSeconds, date, now);
     }
 
     getRelativeTime(diff, date, now) {
-        if (diff < 60) return "Hace unos segundos";
-        if (diff < 3600) return `Hace ${Math.floor(diff / 60)} minuto${Math.floor(diff / 60) > 1 ? 's' : ''}`;
+        if (isNaN(diff) || diff < 60) return "Hace unos segundos";
+        if (diff < 3600) {
+            const mins = Math.floor(diff / 60);
+            return `Hace ${mins} minuto${mins > 1 ? 's' : ''}`;
+        }
 
         const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        if (date.toDateString() === now.toDateString()) return `Hoy, ${timeStr}`;
+        if (date.toDateString() === now.toDateString()) {
+            return `Hoy, ${timeStr}`;
+        }
 
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        if (date.toDateString() === yesterday.toDateString()) return `Ayer, ${timeStr}`;
+        if (date.toDateString() === yesterday.toDateString()) {
+            return `Ayer, ${timeStr}`;
+        }
 
         return date.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
     renderSystemHealth(data) {
-        // RSSI
+        // RSSI WiFi
         const rssi = this.dom.wifi;
         if (rssi) {
             const val = data.rssi;
             if (val && val !== 0) {
                 rssi.textContent = val;
-                rssi.style.color = val > -60 ? "#00d4aa" : (val > -75 ? "#ffdd00" : "#ff4444");
+                rssi.style.color = val > -60 ? "#16a34a" : (val > -75 ? "#d97706" : "#dc2626");
             } else {
                 rssi.textContent = "--";
                 rssi.style.color = "";
             }
         }
 
-        // Uptime
+        // Tiempo de funcionamiento (Uptime)
         const up = this.dom.uptime;
         if (up && data.uptime != null) {
             const d = Math.floor(data.uptime / 86400);
             const h = Math.floor((data.uptime % 86400) / 3600);
             const m = Math.floor((data.uptime % 3600) / 60);
-            // Filtrar partes vacías (ej: no mostrar "0d")
-            up.textContent = [d > 0 ? `${d}d` : null, (h > 0 || d > 0) ? `${h}h` : null, `${m}m`].filter(Boolean).join(' ');
+            const parts = [];
+            if (d > 0) parts.push(`${d}d`);
+            if (h > 0 || d > 0) parts.push(`${h}h`);
+            parts.push(`${m}m`);
+            up.textContent = parts.join(' ');
         }
     }
 
@@ -152,22 +177,35 @@ class WeatherDashboard {
         const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
         const idx = Math.round((deg % 360) / 22.5);
 
-        if (this.dom.windText) this.dom.windText.textContent = dirs[idx % 16];
-        if (this.dom.windArrow) this.dom.windArrow.style.transform = `rotate(${deg}deg)`;
+        if (this.dom.windText) {
+            this.dom.windText.textContent = dirs[idx % 16];
+        }
+        if (this.dom.windArrow) {
+            this.dom.windArrow.style.transform = `rotate(${deg}deg)`;
+        }
     }
 
-    updateTempIcon(t) {
-        const icon = this.dom.tempIcon?.querySelector('i');
-        if (!icon) return;
+    updateTemperatureColor(t) {
+        if (t == null) return;
+        const colorClass = t > 25 ? 'temp-hot' : (t < 10 ? 'temp-cold' : 'temp-mild');
 
-        icon.classList.remove('temp-hot', 'temp-mild', 'temp-cold');
-        icon.classList.add(t > 25 ? 'temp-hot' : (t < 10 ? 'temp-cold' : 'temp-mild'));
+        const icon = this.dom.tempIcon?.querySelector('i');
+        if (icon) {
+            icon.classList.remove('temp-hot', 'temp-mild', 'temp-cold');
+            icon.classList.add(colorClass);
+        }
+
+        const valEl = this.dom.fields.temperatura;
+        if (valEl) {
+            valEl.classList.remove('temp-hot', 'temp-mild', 'temp-cold');
+            valEl.classList.add(colorClass);
+        }
     }
 
     showError() {
         if (this.dom.lastUpdate) {
-            this.dom.lastUpdate.textContent = "Error de conexión...";
-            this.dom.lastUpdate.style.color = "#ff4444";
+            this.dom.lastUpdate.textContent = "Error de conexión con la estación...";
+            this.dom.lastUpdate.style.color = "#dc2626";
         }
     }
 
@@ -178,4 +216,6 @@ class WeatherDashboard {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => new WeatherDashboard());
+document.addEventListener('DOMContentLoaded', () => {
+    new WeatherDashboard();
+});

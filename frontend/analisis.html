@@ -1,42 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exportar Datos - Meteo Lite</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <title>Exportar Datos — Estación Meteorológica</title>
     <link rel="icon" href="/static/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <h1>Exportar Datos Históricos</h1>
-            <nav>
-                <a href="/">Dashboard</a>
-                <a href="/analisis" class="active">Análisis</a>
-            </nav>
-        </header>
-
-        <main class="analysis-view">
-            <div class="export-container">
-                <p>Haz clic en el botón para descargar el archivo CSV con todos los registros de la estación
-                    meteorológica.</p>
-
-                <a id="download-btn" href="/api/descargar-csv" class="download-button">
-                    <i class="fa-solid fa-download"></i>
-                    Descargar CSV Completo
-                </a>
-
-
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-cloud-sun"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>El tiempo en Espadaña</h1>
+                    <span class="brand-sub">Estación Sainlogic Espadaña</span>
+                </div>
             </div>
-        </main>
-    </div>
-</body>
 
+            <div class="header-right">
+                <nav class="desktop-nav">
+                    <a href="/" class="nav-tab">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/analisis" class="nav-tab active">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Análisis</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content container analysis-view">
+        <div class="export-card">
+            <div class="export-icon">
+                <i class="fa-solid fa-file-csv"></i>
+            </div>
+            <h2>Exportar Datos Históricos</h2>
+            <p>Descarga el archivo CSV completo con todos los registros cronológicos de la estación en Espadaña (temperatura, humedad, lluvia, ráfagas y viento).</p>
+
+            <a id="download-btn" href="/api/descargar-csv" class="btn-download">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span>Descargar CSV Completo</span>
+            </a>
+        </div>
+    </main>
+</body>
 </html>

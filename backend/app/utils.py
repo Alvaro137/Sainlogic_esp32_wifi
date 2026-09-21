@@ -1,8 +1,15 @@
+"""
+Utilidades de persistencia, decodificación y cálculo de métricas para la estación meteorológica.
+"""
+
 import sqlite3
 from sqlite3 import Connection
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+
+from pydantic import ValidationError
+from .models import WeatherReading
 
 # Configuración de rutas
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,9 +17,9 @@ DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "datos.db"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Configuración de escalado para evitar Float en SQLite
+# Factores de escala para almacenamiento eficiente en enteros de 1 decimal
 SCALE_FACTOR = 10.0
-SCALED_FIELDS = ["temperatura", "lluvia", "viento_medio", "rafaga", "direccion"]
+SCALED_FIELDS = ['temperatura', 'lluvia', 'viento_medio', 'rafaga', 'direccion']
 
 
 def debugprint(msg: str, debug_flag: bool = False) -> None:
@@ -20,38 +27,38 @@ def debugprint(msg: str, debug_flag: bool = False) -> None:
         print(msg)
 
 
-def scale_value(value: float) -> int:
-    """Float -> Int escalado para almacenamiento eficiente."""
+def scale_value(value: Optional[float]) -> int:
+    """Convierte un valor float en entero escalado."""
     if value is None:
         return 0
     return int(round(value * SCALE_FACTOR))
 
 
-def descale_value(value: int) -> float:
-    """Int escalado -> Float real para la API."""
+def descale_value(value: Optional[int]) -> float:
+    """Convierte un entero escalado de la base de datos a su float real."""
     if value is None:
         return 0.0
     return value / SCALE_FACTOR
 
 
 def process_db_row(row: sqlite3.Row) -> Dict[str, Any]:
-    """Mapea la fila de DB a diccionario aplicando desescalado."""
+    """Mapea una fila de SQLite a un diccionario con valores en unidades reales."""
     record = dict(row)
     for field in SCALED_FIELDS:
-        if field in record:
+        if field in record and record[field] is not None:
             record[field] = descale_value(record[field])
     return record
 
 
 def get_db():
     """
-    Dependency Injection para FastAPI.
-    Gestiona la conexión (Open -> Yield -> Close).
+    Dependency injection para FastAPI.
+    Abre conexión con optimizaciones WAL y la cierra al finalizar la solicitud.
     """
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
 
-    # Optimización: WAL mode para mejor concurrencia en lecturas/escrituras
+    # WAL para escrituras concurrentes
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
 
@@ -62,86 +69,80 @@ def get_db():
 
 
 def init_db() -> None:
-    """Creación de db y tabla si no existe (se ejecuta al principio)."""
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     cur = conn.cursor()
 
-    # Uso INTEGER escalados para optimizar almacenamiento pero conservar 1 decimal de precisión
-    cur.execute(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS datos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
-            temperatura INTEGER, humedad INTEGER, lluvia INTEGER,
-            viento_medio INTEGER, rafaga INTEGER, direccion INTEGER,
-            rssi INTEGER, uptime INTEGER,
+            temperatura INTEGER,
+            humedad INTEGER,
+            lluvia INTEGER,
+            viento_medio INTEGER,
+            rafaga INTEGER,
+            direccion INTEGER,
+            rssi INTEGER,
+            uptime INTEGER,
             raw_hex TEXT
         );
-    """
-    )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_datos_timestamp ON datos(timestamp);")
     conn.commit()
     conn.close()
 
 
-# OPERACIONES DE DATOS
-
-
-def insert_data(
-    db: Connection, data: Dict[str, Any], hex_string: str, rssi: int, uptime: int
-) -> None:
-    """Inserta los datos en la db. Requiere conexión inyectada."""
-    print(f"Insertando datos: {data['temperatura']/10.0}°C, Uptime: {uptime}s")
-
+def insert_data(db: Connection, data: Dict[str, Any], hex_string: str, rssi: int, uptime: int) -> None:
     cur = db.cursor()
     try:
-        cur.execute(
-            """
-            INSERT INTO datos (timestamp, temperatura, humedad, lluvia,
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
+        cur.execute("""
+            INSERT INTO datos (
+                timestamp, temperatura, humedad, lluvia,
                 viento_medio, rafaga, direccion, rssi, uptime, raw_hex
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                datetime.utcnow().isoformat(),
-                data.get("temperatura"),
-                data.get("humedad"),
-                data.get("lluvia"),
-                data.get("viento_medio"),
-                data.get("rafaga"),
-                data.get("direccion"),
-                rssi,
-                uptime,
-                hex_string,
-            ),
-        )
+        """, (
+            now_iso,
+            data.get("temperatura"),
+            data.get("humedad"),
+            data.get("lluvia"),
+            data.get("viento_medio"),
+            data.get("rafaga"),
+            data.get("direccion"),
+            rssi,
+            uptime,
+            hex_string
+        ))
         db.commit()
     except Exception as e:
-        print(f"Error crítico DB en insert: {e}")
+        print(f"Error crítico en insert_data: {e}")
 
 
 def get_rain_24h(db: Connection) -> Dict[str, float]:
     """
-    Calcula lluvia acumulada en 24h.
-    Maneja el caso de reinicio de contador del sensor.
+    Calcula la lluvia acumulada en las últimas 24 horas considerando
+    posibles reinicios del contador del pluviómetro.
     """
     cursor = db.cursor()
-    time_limit = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+    # Usamos el índice idx_datos_timestamp
+    time_limit = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S.%f")
 
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT lluvia FROM datos WHERE timestamp >= ? ORDER BY timestamp ASC
-    """,
-        (time_limit,),
-    )
+    """, (time_limit,))
 
     rows = cursor.fetchall()
 
     if not rows:
         return {"rain_24h": 0.0, "rain_accumulated": 0.0}
 
-    # Detectar reinicios
-    rain_values_mm = [v[0] / SCALE_FACTOR for v in rows]
+    rain_values_mm = [v[0] / SCALE_FACTOR for v in rows if v[0] is not None]
+
+    if not rain_values_mm:
+        return {"rain_24h": 0.0, "rain_accumulated": 0.0}
+
     rain_24h = 0.0
     rain_accumulated = rain_values_mm[-1]
 
@@ -151,20 +152,19 @@ def get_rain_24h(db: Connection) -> Dict[str, float]:
             previous = rain_values_mm[i - 1]
 
             if current >= previous:
-                rain_24h += current - previous
+                rain_24h += (current - previous)
             else:
-                # Detección de reset (ej. 409.5 -> 0.0).
-                # Sumamos el offset para asegurarnos de que la lluvia acumulada nunca decrece.
-                reset_amount = previous - current
-                rain_24h += reset_amount
+                # Detección de reset de contador (ej. 409.5 -> 0.0)
+                rain_24h += (previous - current)
 
     return {
         "rain_24h": round(rain_24h, 1),
-        "rain_accumulated": round(rain_accumulated, 1),
+        "rain_accumulated": round(rain_accumulated, 1)
     }
 
 
 def get_recent(db: Connection, limit: int = 1) -> List[Dict[str, Any]]:
+    """Obtiene los últimos registros registrados ordenados por ID descendente."""
     db.row_factory = sqlite3.Row
     cur = db.cursor()
     try:
@@ -172,55 +172,31 @@ def get_recent(db: Connection, limit: int = 1) -> List[Dict[str, Any]]:
         rows = cur.fetchall()
         return [process_db_row(row) for row in rows]
     except Exception as e:
-        print(f"Error lectura DB: {e}")
+        print(f"Error en get_recent: {e}")
         return []
 
 
 def get_all_records(db: Connection) -> List[Dict[str, Any]]:
+    """Obtiene todos los registros cronológicos para exportación CSV."""
     db.row_factory = sqlite3.Row
     cur = db.cursor()
     try:
-        cur.execute("SELECT * FROM datos ORDER BY timestamp ASC")
+        cur.execute("SELECT * FROM datos ORDER BY id ASC")
         rows = cur.fetchall()
         return [process_db_row(row) for row in rows]
     except Exception as e:
-        print(f"Error lectura DB: {e}")
+        print(f"Error en get_all_records: {e}")
         return []
 
 
-# DECODIFICACIÓN DEL MENSAJE (ver Readme.md)
-
-
 def decode_raw_msg(msg: bytes) -> Dict[str, Any]:
-    """Decodificación del mensaje binario propietario del sensor."""
-    if len(msg) < 16:
+    """
+    Decodifica y valida el payload binario recibido del ESP32.
+    Retorna diccionario escalado para almacenamiento o {} si falla.
+    """
+    try:
+        reading = WeatherReading.from_raw_bytes(msg)
+        return reading.to_db_dict()
+    except (ValueError, ValidationError) as e:
+        print(f"Payload descartado por validación: {e}")
         return {}
-    data = msg[2:]
-
-    # Bitmasking para extraer flags de viento
-    flags_wind = data[1] & 0x0F
-    wind_dir_msb = 1 if (flags_wind & 0x04) else 0
-    wind_gust_msb = 1 if (flags_wind & 0x02) else 0
-    wind_avg_msb = 1 if (flags_wind & 0x01) else 0
-
-    # Reconstrucción de valores (LSB + MSB)
-    viento_med = (data[2] | (wind_avg_msb << 8)) * 0.1
-    rafaga = (data[3] | (wind_gust_msb << 8)) * 0.1
-    direccion = float(data[4] | (wind_dir_msb << 8))
-
-    raw_rain = ((data[5] & 0x0F) << 8) | data[6]
-    lluvia = raw_rain * 0.1 + 642.2  # Offset calibración
-
-    raw_temp = ((data[7] & 0x0F) << 8) | data[8]
-    temp_c = (((raw_temp - 400) / 10.0) - 32) * (5.0 / 9.0)  # Conversión F a C
-
-    hum = int(data[9])
-
-    return {
-        "temperatura": scale_value(temp_c),
-        "humedad": hum,
-        "viento_medio": scale_value(viento_med),
-        "rafaga": scale_value(rafaga),
-        "lluvia": scale_value(lluvia),
-        "direccion": scale_value(direccion),
-    }
