@@ -139,6 +139,41 @@ body {
   flex-shrink: 0;
 }
 
+/* Enlace discreto a Ganaderos Campo */
+.nav-campo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nav-campo-link:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.nav-campo-link:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.nav-campo-link i {
+  font-size: 0.85rem;
+  opacity: 0.95;
+}
+
 /* Pestañas de navegación */
 .desktop-nav {
   display: flex;
@@ -519,7 +554,17 @@ body {
 
   .brand-text h1 {
     font-size: 0.95rem;
-    max-width: 180px;
+    max-width: 155px;
+  }
+
+  .nav-campo-link span {
+    display: none;
+  }
+
+  .nav-campo-link {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
@@ -542,6 +587,13 @@ body {
 
   .brand-sub {
     font-size: 0.78rem;
+  }
+
+  .nav-campo-link {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 0.82rem;
+    gap: 6px;
   }
 
   .desktop-nav {

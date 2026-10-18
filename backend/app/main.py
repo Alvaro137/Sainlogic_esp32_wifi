@@ -68,7 +68,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Servir estáticos
+# Servir estáticos (tanto en raíz como bajo subruta /meteo/)
+app.mount("/meteo/static", StaticFiles(directory=STATIC_FILES_PATH), name="meteo_static")
 app.mount("/static", StaticFiles(directory=STATIC_FILES_PATH), name="static")
 
 
@@ -97,7 +98,12 @@ async def log_requests(request: Request, call_next):
 
 # RUTAS DE INTERFAZ HTML
 
+@app.get("/meteo", response_class=HTMLResponse)
+@app.head("/meteo", response_class=HTMLResponse)
+@app.get("/meteo/", response_class=HTMLResponse)
+@app.head("/meteo/", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
+@app.head("/", response_class=HTMLResponse)
 async def serve_index():
     """Sirve el dashboard interactivo principal."""
     index_path = FRONTEND_DIR / "index.html"
@@ -107,7 +113,10 @@ async def serve_index():
         return f.read()
 
 
+@app.get("/meteo/analisis", response_class=HTMLResponse)
+@app.head("/meteo/analisis", response_class=HTMLResponse)
 @app.get("/analisis", response_class=HTMLResponse)
+@app.head("/analisis", response_class=HTMLResponse)
 async def serve_analisis():
     """Sirve la página de análisis y descarga de históricos."""
     analisis_path = FRONTEND_DIR / "analisis.html"
@@ -117,8 +126,31 @@ async def serve_analisis():
         return f.read()
 
 
+@app.get("/meteo/manifest.json")
+@app.head("/meteo/manifest.json")
+async def serve_meteo_manifest():
+    manifest_path = FRONTEND_DIR / "manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404)
+    return Response(content=manifest_path.read_text(encoding="utf-8"), media_type="application/json")
+
+
+@app.get("/meteo/sw.js")
+@app.head("/meteo/sw.js")
+async def serve_meteo_sw():
+    sw_path = FRONTEND_DIR / "sw.js"
+    if not sw_path.exists():
+        raise HTTPException(status_code=404)
+    return Response(
+        content=sw_path.read_text(encoding="utf-8"),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/meteo/"}
+    )
+
+
 # ENDPOINTS DE API
 
+@app.get("/meteo/api/recientes")
 @app.get("/api/recientes")
 async def api_recientes(db: Connection = Depends(get_db)):
     """
@@ -144,6 +176,7 @@ async def api_recientes(db: Connection = Depends(get_db)):
     return latest_record
 
 
+@app.post("/meteo/api/raw-data", status_code=200)
 @app.post("/api/raw-data", status_code=200)
 async def raw_data(
     request: Request,
@@ -192,6 +225,7 @@ async def raw_data(
         return {"status": "error", "detail": str(e)}
 
 
+@app.get("/meteo/api/descargar-csv")
 @app.get("/api/descargar-csv")
 async def download_csv():
     """

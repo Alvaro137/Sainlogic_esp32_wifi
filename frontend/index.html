@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>El tiempo en Espadaña — Estación Meteorológica</title>
-    <link rel="icon" href="/static/favicon.ico">
+    <link rel="icon" href="/meteo/static/favicon.ico">
+    <link rel="manifest" href="/meteo/manifest.json">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Meteo">
+    <link rel="apple-touch-icon" href="/meteo/static/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/meteo/static/styles.css">
 </head>
 <body>
     <header class="app-header">
@@ -25,12 +30,20 @@
             </div>
 
             <div class="header-right">
+                <button id="btn-install-meteo" class="nav-tab" style="display: inline-flex; background: rgba(255,255,255,0.18); color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;" title="Instalar aplicación">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Instalar</span>
+                </button>
+                <a href="/campo/" class="nav-campo-link" title="Ir a Ganaderos Campo">
+                    <i class="fa-solid fa-cow"></i>
+                    <span>Campo</span>
+                </a>
                 <nav class="desktop-nav">
-                    <a href="/" class="nav-tab active">
+                    <a href="/meteo/" class="nav-tab active">
                         <i class="fa-solid fa-chart-line"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="/analisis" class="nav-tab">
+                    <a href="/meteo/analisis" class="nav-tab">
                         <i class="fa-solid fa-download"></i>
                         <span>Análisis</span>
                     </a>
@@ -145,6 +158,6 @@
         </div>
     </main>
 
-    <script src="/static/app.js"></script>
+    <script src="/meteo/static/app.js"></script>
 </body>
 </html>
