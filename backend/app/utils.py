@@ -2,6 +2,7 @@
 Utilidades de persistencia, decodificación y cálculo de métricas para la estación meteorológica.
 """
 
+import os
 import sqlite3
 from sqlite3 import Connection
 from datetime import datetime, timezone, timedelta
@@ -14,8 +15,58 @@ from .models import WeatherReading
 # Configuración de rutas
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "datos.db"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Rutas estándar en pendrive USB (Linux / Orange Pi)
+USB_BASE_DIR = Path("/mnt/usb")
+USB_METEO_DIR = USB_BASE_DIR / "meteo_data"
+USB_DEFAULT_DB = USB_METEO_DIR / "datos.db"
+
+
+def resolve_db_path() -> Path:
+    """
+    Resuelve dinámicamente la ruta a la base de datos SQLite 'datos.db'.
+    Prioridad:
+    1. Variable de entorno METEO_DB_PATH (si está definida).
+    2. Pendrive USB: /mnt/usb/meteo_data/datos.db si existe y es accesible/escribible.
+    3. Pendrive USB: /mnt/usb si está montado y es escribible (crea meteo_data/datos.db).
+    4. Fallback local en tarjeta SD/disco: backend/data/datos.db.
+    """
+    # 1. Variable de entorno METEO_DB_PATH
+    env_path = os.getenv("METEO_DB_PATH")
+    if env_path:
+        p = Path(env_path).resolve()
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            return p
+        except OSError as e:
+            print(f"[DB] Advertencia: No se pudo crear directorio para METEO_DB_PATH ({p}): {e}")
+
+    # 2. Archivo en pendrive USB existente
+    try:
+        if USB_DEFAULT_DB.exists() and os.access(USB_DEFAULT_DB, os.W_OK):
+            return USB_DEFAULT_DB
+    except OSError:
+        pass
+
+    # 3. Directorio /mnt/usb montado y escribible
+    try:
+        if USB_BASE_DIR.exists() and os.access(USB_BASE_DIR, os.W_OK):
+            USB_METEO_DIR.mkdir(parents=True, exist_ok=True)
+            return USB_DEFAULT_DB
+    except OSError:
+        pass
+
+    # 4. Fallback local estándar (backend/data/datos.db)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    return DATA_DIR / "datos.db"
+
+
+def get_db_path() -> Path:
+    """Devuelve la ruta actual resuelta para la base de datos."""
+    return resolve_db_path()
+
+
+DB_PATH = get_db_path()
 
 # Factores de escala para almacenamiento eficiente en enteros de 1 decimal
 SCALE_FACTOR = 10.0
@@ -55,7 +106,8 @@ def get_db():
     Dependency injection para FastAPI.
     Abre conexión con optimizaciones WAL y la cierra al finalizar la solicitud.
     """
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    target_path = get_db_path()
+    conn = sqlite3.connect(target_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
 
     # WAL para escrituras concurrentes
@@ -69,7 +121,9 @@ def get_db():
 
 
 def init_db() -> None:
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    target_path = get_db_path()
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(target_path, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     cur = conn.cursor()
