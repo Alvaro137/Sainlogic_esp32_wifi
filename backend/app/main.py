@@ -27,7 +27,8 @@ from .utils import (
     debugprint,
     get_rain_24h,
     descale_value,
-    DB_PATH
+    DB_PATH,
+    get_db_path
 )
 
 # Configuración de rutas
@@ -52,6 +53,8 @@ DEBUGFLAG = False
 async def lifespan(app: FastAPI):
     """Ciclo de vida de la aplicación: inicializa la base de datos al arrancar."""
     try:
+        active_db = get_db_path()
+        print(f"[DB] Base de datos activa: {active_db}")
         init_db()
     except Exception as e:
         print(f"Error inicializando la base de datos: {e}")
@@ -196,7 +199,7 @@ async def download_csv():
     Itera sobre el cursor SQLite usando fetchmany para evitar cargar todo el dataset en memoria.
     """
     def iter_csv():
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(get_db_path(), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("""

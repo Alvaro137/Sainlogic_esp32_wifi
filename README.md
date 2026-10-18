@@ -141,17 +141,47 @@ Para despliegues persistentes en placas monoplaca (Orange Pi, Raspberry Pi) o se
 ```ini
 [Unit]
 Description=Servicio API Estación Meteorológica Sainlogic
-After=network.target
+After=network.target mnt-usb.mount
 
 [Service]
 User=varo
 WorkingDirectory=/home/varo/meteo_lite/backend/app
+Environment="METEO_DB_PATH=/mnt/usb/meteo_data/datos.db"
 ExecStart=/home/varo/meteo_lite/backend/app/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
+```
+
+---
+
+### 5. Persistencia en Pendrive USB y Herramientas de Mantenimiento
+
+Para proteger la tarjeta microSD contra desgaste prematuro provocado por las escrituras constantes de SQLite en modo WAL, la base de datos se almacena preferentemente en un pendrive USB.
+
+#### Detección automática de base de datos
+El backend resuelve la ruta de `datos.db` siguiendo este orden de prioridad:
+1. Variable de entorno `METEO_DB_PATH`.
+2. Archivo existente en pendrive: `/mnt/usb/meteo_data/datos.db`.
+3. Montaje USB escribible: `/mnt/usb` (crea automáticamente el directorio `meteo_data`).
+4. Fallback local en disco/SD: `backend/data/datos.db`.
+
+#### Migración de datos existentes a USB
+Para transferir la base de datos actual al pendrive de forma segura (con checkpoint WAL y verificación de integridad):
+```bash
+python3 scripts/migrate_to_usb.py --src /home/varo/meteo_lite/backend/data/datos.db --dest /mnt/usb/meteo_data/datos.db
+```
+
+#### Importación de datos históricos de ThingSpeak (Canal 2770121)
+Para importar datos previos (incluyendo todo 2024) con validación física y deduplicación:
+```bash
+# Descargar e importar datos de diciembre de 2024:
+python3 scripts/import_thingspeak_2024.py
+
+# O importar todo el histórico disponible:
+python3 scripts/import_thingspeak_2024.py --all
 ```
 
 #### Proxy inverso con Caddy (`/etc/caddy/Caddyfile`)
