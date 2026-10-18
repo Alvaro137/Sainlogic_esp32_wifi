@@ -219,3 +219,62 @@ class WeatherDashboard {
 document.addEventListener('DOMContentLoaded', () => {
     new WeatherDashboard();
 });
+
+// ============================================================
+// PWA Y SERVICE WORKER INITIALIZATION
+// ============================================================
+function initPWA() {
+    // 1. Registro inmediato e incondicional del Service Worker
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/meteo/sw.js", { scope: "/meteo/" })
+            .then((reg) => {
+                console.log("[Meteo PWA] Service Worker registrado en:", reg.scope);
+                reg.update();
+            })
+            .catch((err) => console.warn("[Meteo PWA] Error registrando SW:", err));
+    }
+
+    // 2. Control de instalación y botón en cabecera
+    let deferredPrompt = null;
+    const btnInstall = document.getElementById("btn-install-meteo");
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+
+    if (btnInstall) {
+        if (isStandalone) {
+            btnInstall.style.display = "none";
+        } else {
+            btnInstall.style.display = "inline-flex";
+        }
+
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            btnInstall.style.display = "inline-flex";
+        });
+
+        btnInstall.addEventListener("click", async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === "accepted") {
+                    btnInstall.style.display = "none";
+                }
+                deferredPrompt = null;
+            } else {
+                alert("📱 Para instalar 'El tiempo en Espadaña':\n\n1. Pulsa en el menú del navegador (los 3 puntos ⋮ en Android o Compartir ⎋ en iOS).\n2. Selecciona 'Instalar aplicación' o 'Añadir a la pantalla de inicio'.");
+            }
+        });
+
+        window.addEventListener("appinstalled", () => {
+            deferredPrompt = null;
+            btnInstall.style.display = "none";
+        });
+    }
+}
+
+// Inicializar inmediatamente
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPWA);
+} else {
+    initPWA();
+}
