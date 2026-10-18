@@ -17,6 +17,7 @@ env/
 venv/
 .venv/
 sainlogic_venv/
+.pytest_cache/
 
 # Bases de datos reales y datos sensibles de explotación
 *.db
